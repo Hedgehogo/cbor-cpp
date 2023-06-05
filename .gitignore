@@ -1,7 +1,6 @@
 .idea/
 *.xcodeproj/
 *.dSYM
-test
 /.vs
 /.vscode
 /*.sln
@@ -14,10 +13,4 @@ test
 /Debug
 /Release
 /x64
-/libcborcpp.a
-/libcborcpp_dynamic.so
-/testing
-/CMakeCache.txt
-/CMakeFiles/
-/Makefile
-/cmake_install.cmake
+/cmake-build-*/

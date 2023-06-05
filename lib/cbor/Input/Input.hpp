@@ -17,27 +17,28 @@
 #pragma once
 
 namespace cbor {
-    class input {
-    private:
-        unsigned char *_data;
-        int _size;
-        int _offset;
-    public:
-        input(void *data, int size);
-
-        ~input();
-
-        bool has_bytes(int count);
-
-        unsigned char get_byte();
-
-        unsigned short get_short();
-
-        unsigned int get_int();
-
-        unsigned long long get_long();
-
-        void get_bytes(void *to, int count);
-    };
+	class Input {
+	private:
+		unsigned char* _data;
+		int _size;
+		int _offset;
+	
+	public:
+		Input(void* data, int size);
+		
+		~Input();
+		
+		bool has_bytes(int count);
+		
+		unsigned char get_byte();
+		
+		unsigned short get_short();
+		
+		unsigned int get_int();
+		
+		unsigned long long get_long();
+		
+		void get_bytes(void* to, int count);
+	};
 }
 

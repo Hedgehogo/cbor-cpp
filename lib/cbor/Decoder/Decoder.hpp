@@ -16,11 +16,36 @@
 
 #pragma once
 
-#include "cborcpp/input.h"
-#include "cborcpp/encoder.h"
-#include "cborcpp/decoder.h"
-#include "cborcpp/output_static.h"
-#include "cborcpp/output_dynamic.h"
-#include "cborcpp/exceptions.h"
-#include "cborcpp/cbor_object.h"
+#include "../Input/Input.hpp"
+#include "../Object/Object.hpp"
 
+namespace cbor {
+	enum class DecoderState {
+		Type,
+		PInt,
+		NInt,
+		BytesSize,
+		BytesData,
+		StringSize,
+		StringData,
+		Array,
+		Map,
+		Tag,
+		Special,
+		Error
+	};
+	
+	class Decoder {
+	private:
+		Input* _in;
+		DecoderState _state;
+		int _currentLength;
+	
+	public:
+		Decoder(Input& in);
+		
+		~Decoder();
+		
+		PObject run();
+	};
+}

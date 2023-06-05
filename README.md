@@ -9,19 +9,15 @@ Just a simple SAX-like Concise Binary Object Representation (CBOR).
 
 [http://tools.ietf.org/html/rfc7049](http://tools.ietf.org/html/rfc7049)
 
-#### Dependencies
-
-* Boost 1.55+
-
 #### Examples
 
 ```C++
     { //encoding
-        cbor::encoder encoder(output);
+        cbor::Encoder encoder(Output);
 		// [123, "bar", 321, 321, "foo", true, false, null, undefined, [123], [], {"hello": "world", "age": 18}, b"abcde"]
         encoder.write_array(13);
         {
-            encoder.write_int(123);
+		    encoder.write_int(123);
             encoder.write_string("bar");
             encoder.write_int(321);
             encoder.write_int(321);
@@ -30,8 +26,8 @@ Just a simple SAX-like Concise Binary Object Representation (CBOR).
             encoder.write_bool(false);
             encoder.write_null();
             encoder.write_undefined();
-
-			encoder.write_array(1);
+            
+            encoder.write_array(1);
 			{
 				encoder.write_int(123);
 			}
@@ -48,11 +44,11 @@ Just a simple SAX-like Concise Binary Object Representation (CBOR).
     }
 
     { // decoding
-        cbor::input input(output.data(), output.size());
-        cbor::decoder decoder(input);
+        cbor::Input input(output.data(), output.size());
+        cbor::Decoder decoder(input);
         auto result = decoder.run();
-		assert(result->type == COT_ARRAY & result->array_or_map_size == 13);
-		const auto& array_value = result->as<CborArrayValue>();
+		assert(result->type == ObjectType::Array & result->array_or_map_size == 13);
+		const auto& array_value = result->as<ArrayValue>();
 		auto obj1 = array_value[0]->as_int();
 		auto obj2 = array_value[1]->as_string();
 		auto obj3 = array_value[2]->as_int();

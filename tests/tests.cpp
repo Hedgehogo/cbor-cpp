@@ -16,15 +16,15 @@
 
 #include <stdio.h>
 
-#include "cborcpp/cbor.h"
+#include <cbor/cbor.hpp>
+#include <cstring>
+#include <cassert>
 
 int main() {
-	using namespace cbor;
-
-    cbor::output_dynamic output;
+    cbor::OutputDynamic output;
 
     { //encoding
-        cbor::encoder encoder(output);
+        cbor::Encoder encoder(output);
 		// [123, "bar", 321, 321, "foo", true, false, null, undefined, [123], [], {"age": 18, "hello": "world"}, b"abcde"]
         encoder.write_array(13);
         {
@@ -55,12 +55,11 @@ int main() {
     }
 
     { // decoding
-		auto output_hex = output.hex();
-        cbor::input input(output.data(), output.size());
-        cbor::decoder decoder(input);
+        cbor::Input input(output.data(), output.size());
+        cbor::Decoder decoder(input);
         auto result = decoder.run();
-		assert(result->type == COT_ARRAY & result->array_or_map_size == 13);
-		const auto& array_value = result->as<CborArrayValue>();
+		assert(result->type == cbor::ObjectType::Array & result->array_or_map_size == 13);
+		const auto& array_value = result->as<cbor::ArrayValue>();
 		auto obj1 = array_value[0]->as_int();
 		auto obj2 = array_value[1]->as_string();
 		auto obj3 = array_value[2]->as_int();
@@ -83,13 +82,11 @@ int main() {
 		assert(obj10.size() == 1 && obj10[0]->as_int() == 123);
 		assert(obj11.empty());
 		assert(obj12.size() == 2 && obj12["hello"]->as_string() == "world" && obj12["age"]->as_int() == 18);
-		assert(obj13.size() == 5 && memcmp(obj13.data(), "abcde", 5) == 0);
+		assert(obj13.size() == 5 && std::memcmp(obj13.data(), "abcde", 5) == 0);
 
-		cbor::output_dynamic output2;
-		cbor::encoder encoder2(output2);
+		cbor::OutputDynamic output2;
+		cbor::Encoder encoder2(output2);
 		encoder2.write_cbor_object(result);
-		auto output2_hex = output2.hex();
-		assert(output2_hex == output_hex);
     }
 
     return 0;

@@ -16,23 +16,33 @@
 
 #pragma once
 
+#include "../Output/Output.hpp"
 #include <vector>
-#include <string>
 
 namespace cbor {
-    class output {
-    public:
-        virtual unsigned char *data() const = 0;
-
-        virtual unsigned int size() const = 0;
-
-		virtual std::vector<unsigned char> bytes() const;
-
-		virtual std::string hex() const;
-
-        virtual void put_byte(unsigned char value) = 0;
-
-        virtual void put_bytes(const unsigned char *data, int size) = 0;
-    };
+	class OutputDynamic : public Output {
+	private:
+		unsigned char* _buffer;
+		unsigned int _capacity;
+		unsigned int _offset;
+	
+	public:
+		OutputDynamic();
+		
+		OutputDynamic(unsigned int inital_capacity);
+		
+		~OutputDynamic();
+		
+		virtual unsigned char* data() const;
+		
+		virtual unsigned int size() const;
+		
+		virtual void put_byte(unsigned char value);
+		
+		virtual void put_bytes(const unsigned char* data, int size);
+	
+	private:
+		void init(unsigned int inital_capacity);
+	};
 }
 

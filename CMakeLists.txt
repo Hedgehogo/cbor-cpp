@@ -1,30 +1,38 @@
 cmake_minimum_required(VERSION 2.8)
-project(cborcpp)
+project(cbor_cpp)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_CXX_STANDARD 17)
 
-file(GLOB HEADERS "include/cborcpp/*.h")
 
-set(SOURCE_FILES
-    src/cborcpp/encoder.cpp
-    src/cborcpp/decoder.cpp
-    src/cborcpp/input.cpp
-    src/cborcpp/output_dynamic.cpp
-    src/cborcpp/output_static.cpp
-    src/cborcpp/cbor_object.cpp
-    src/cborcpp/output.cpp
-)
+file(GLOB_RECURSE src "lib/*.hpp" "lib/*.cpp")
 
-set(TEST_SOURCE_FILES
-    src/tests.cpp
-    )
-include_directories(include/)
+add_library(${PROJECT_NAME} ${src})
 
-add_library(cborcpp_dynamic SHARED ${SOURCE_FILES} ${HEADERS})
-add_library(cborcpp STATIC ${SOURCE_FILES} ${HEADERS})
-add_executable(testing ${SOURCE_FILES} ${HEADERS} ${TEST_SOURCE_FILES})
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
-target_include_directories( cborcpp 
-  PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
+target_include_directories(${PROJECT_NAME} PUBLIC
+        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib>
+        )
+
+
+file(GLOB_RECURSE test-src "tests/*.hpp" "tests/*.cpp")
+
+add_executable(${PROJECT_NAME}_tests ${test-src})
+
+target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME})
+
+
+install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/lib/cbor DESTINATION ${CMAKE_INSTALL_PREFIX}/include PATTERN "*.hpp")
+
+install(TARGETS ${PROJECT_NAME}
+        EXPORT ${PROJECT_NAME}
+        LIBRARY DESTINATION lib
+        PUBLIC_HEADER DESTINATION include/${PROJECT_NAME}
+        )
+
+install(EXPORT ${PROJECT_NAME}
+        FILE ${PROJECT_NAME}Config.cmake
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION lib/cmake/${PROJECT_NAME}
+        )

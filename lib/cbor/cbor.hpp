@@ -16,26 +16,10 @@
 
 #pragma once
 
-#include "cborcpp/output.h"
-
-namespace cbor {
-    class output_static : public output {
-    private:
-        unsigned char *_buffer;
-        unsigned int _capacity;
-        unsigned int _offset;
-    public:
-        output_static(unsigned int capacity);
-
-        ~output_static();
-
-        virtual unsigned char *getData() const;
-
-        virtual unsigned int getSize() const;
-
-        virtual void put_byte(unsigned char value);
-
-        virtual void put_bytes(const unsigned char *data, int size);
-    };
-}
-
+#include "Input/Input.hpp"
+#include "Encoder/Encoder.hpp"
+#include "Decoder/Decoder.hpp"
+#include "OutputStatic/OutputStatic.hpp"
+#include "OutputDynamic/OutputDynamic.hpp"
+#include "Exceptions/Exceptions.hpp"
+#include "Object/Object.hpp"

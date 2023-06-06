@@ -20,46 +20,41 @@
 #include <string.h>
 
 namespace cbor {
-	Input::Input(void* data, int size) {
-		_data = (unsigned char*)data;
-		_size = size;
-		_offset = 0;
-	}
-	
-	Input::~Input() {
+	Input::Input(void* data, int size) :
+		_data((uint8_t*)data), _size(size), _offset(0) {
 	}
 	
 	bool Input::has_bytes(int count) {
 		return _size - _offset >= count;
 	}
 	
-	unsigned char Input::get_byte() {
+	uint8_t Input::get_int8() {
 		return _data[_offset++];
 	}
 	
-	unsigned short Input::get_short() {
-		unsigned short value = ((unsigned short)_data[_offset] << 8) | ((unsigned short)_data[_offset + 1]);
+	uint16_t Input::get_int16() {
+		uint16_t value = ((uint16_t)_data[_offset] << 8) | ((uint16_t)_data[_offset + 1]);
 		_offset += 2;
 		return value;
 	}
 	
-	unsigned int Input::get_int() {
-		unsigned int value =
-            ((unsigned int)_data[_offset] << 24) |
-			((unsigned int)_data[_offset + 1] << 16) |
-			((unsigned int)_data[_offset + 2] << 8) |
-			((unsigned int)_data[_offset + 3]);
+	uint32_t Input::get_int32() {
+		uint32_t value =
+            ((uint32_t)_data[_offset] << 24) |
+			((uint32_t)_data[_offset + 1] << 16) |
+			((uint32_t)_data[_offset + 2] << 8) |
+			((uint32_t)_data[_offset + 3]);
 		_offset += 4;
 		return value;
 	}
 	
-	unsigned long long Input::get_long() {
-		unsigned long long value =
-			((unsigned long long)_data[_offset] << 56) |
-			((unsigned long long)_data[_offset + 1] << 48) | ((unsigned long long)_data[_offset + 2] << 40) |
-			((unsigned long long)_data[_offset + 3] << 32) | ((unsigned long long)_data[_offset + 4] << 24) |
-			((unsigned long long)_data[_offset + 5] << 16) | ((unsigned long long)_data[_offset + 6] << 8) |
-			((unsigned long long)_data[_offset + 7]);
+	uint64_t Input::get_int64() {
+		uint64_t value =
+			((uint64_t)_data[_offset] << 56) |
+			((uint64_t)_data[_offset + 1] << 48) | ((uint64_t)_data[_offset + 2] << 40) |
+			((uint64_t)_data[_offset + 3] << 32) | ((uint64_t)_data[_offset + 4] << 24) |
+			((uint64_t)_data[_offset + 5] << 16) | ((uint64_t)_data[_offset + 6] << 8) |
+			((uint64_t)_data[_offset + 7]);
 		_offset += 8;
 		return value;
 	}
@@ -67,5 +62,12 @@ namespace cbor {
 	void Input::get_bytes(void* to, int count) {
 		memcpy(to, _data + _offset, count);
 		_offset += count;
+	}
+	
+	Input::~Input() {
+	}
+	
+	bool Input::is_empty() {
+		return _size == _offset;
 	}
 }

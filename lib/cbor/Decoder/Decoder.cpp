@@ -19,472 +19,431 @@
 #include <limits.h>
 
 namespace cbor {
-	Decoder::Decoder(Input& in) {
-		_in = &in;
-		_state = DecoderState::Type;
+	Decoder::Decoder(Input& in) :
+		_in(&in), _state(DecoderState::Type), _minor_type(255) {
 	}
 	
-	Decoder::~Decoder() {
-	
+	bool Decoder::has_bytes() {
+		return _in->has_bytes(_current_length);
 	}
 	
-	static PObject cbor_object_error(const std::string& error_msg) {
-		auto result = std::make_shared<Object>();
-		result->type = ObjectType::Error;
-		result->value = error_msg;
-		return result;
+	bool Decoder::has_bytes(int count) {
+		return _in->has_bytes(count);
 	}
 	
-	static void put_decoded_value(PObject& result, std::vector<PObject>& structures_stack, bool& iter_in_map_key, PObject& map_key_temp, PObject value) {
-		auto old_structures_stack_size = structures_stack.size();
-		if(structures_stack.empty()) {
-			if(result)
+	DecoderState Decoder::get_state() {
+		return _state;
+	}
+	
+	static PObject object_error(const std::string& error_msg) {
+		return Object::from_error(error_msg);
+	}
+	
+	static void put_decoded_value(DecodeData& decode_data, PObject value) {
+		auto old_structures_stack_size = decode_data.structures_stack.size();
+		if(decode_data.structures_stack.empty()) {
+			if(decode_data.result)
 				throw DecodeException("multiple cbor object when decoding");
-			result = value;
+			decode_data.result = value;
 			
-			if(value->type == ObjectType::Array || value->type == ObjectType::Map) {
+			if(value->object_type() == ObjectType::Array || value->object_type() == ObjectType::Map) {
 				if(value->array_or_map_size > 0) {
-					structures_stack.push_back(value);
+					decode_data.structures_stack.push_back(value);
 				}
 			}
 			return;
 		}
-		auto last = structures_stack[old_structures_stack_size - 1];
-		if(last->type == ObjectType::Array) {
-			auto& array_value = std::get<ArrayValue>(last->value);
+		auto last = decode_data.structures_stack[old_structures_stack_size - 1];
+		if(last->object_type() == ObjectType::Array) {
+			auto& array_value = last->as<ObjectType::Array>();
 			array_value.push_back(value);
 			if(array_value.size() >= last->array_or_map_size) {
 				// full, pop from structure
-				structures_stack.pop_back();
+				decode_data.structures_stack.pop_back();
 			}
-		} else if(last->type == ObjectType::Map) {
-			if(iter_in_map_key)
-				map_key_temp = value;
+		} else if(last->object_type() == ObjectType::Map) {
+			if(decode_data.iter_in_map_key)
+				decode_data.map_key_temp = value;
 			else {
-				if(map_key_temp->type != ObjectType::String) {
+				if(decode_data.map_key_temp->object_type() != ObjectType::String) {
 					throw DecodeException("invalid map key type");
 				}
-				const auto& key = std::get<StringValue>(map_key_temp->value);
-				auto& map_value = std::get<MapValue>(last->value);
+				const auto& key = decode_data.map_key_temp->as<ObjectType::String>();
+				auto& map_value = last->as<ObjectType::Map>();
 				map_value[key] = value;
 				if(map_value.size() >= last->array_or_map_size) {
 					// full, pop from structure
-					structures_stack.pop_back();
+					decode_data.structures_stack.pop_back();
 				}
 			}
-			iter_in_map_key = !iter_in_map_key;
+			decode_data.iter_in_map_key = !decode_data.iter_in_map_key;
 		} else {
 			throw DecodeException("invalid structure type");
 		}
 		
-		if(value->type == ObjectType::Array || value->type == ObjectType::Map) {
+		if(value->object_type() == ObjectType::Array || value->object_type() == ObjectType::Map) {
 			if(value->array_or_map_size > 0) {
-				structures_stack.push_back(value);
+				decode_data.structures_stack.push_back(value);
 			}
 		}
 	}
 	
-	PObject Decoder::run() {
-		PObject result;
-		std::vector<PObject> structures_stack;
-		bool iter_in_map_key = true;
-		PObject map_key_temp;
+	void Decoder::decode_type_p_int() {
+		if(_minor_type < 24) {
+			_state = DecoderState::PInt;
+			_current_length = 0;
+		} else if(!decode_type_count_length<DecoderState::PInt>(_minor_type)) {
+			_state = DecoderState::Error;
+			throw DecodeException("invalid integer type");
+		}
+	}
+	
+	void Decoder::decode_type_n_int() {
+		if(_minor_type < 24) {
+			_state = DecoderState::NInt;
+			_current_length = 0;
+		} else if(!decode_type_count_length<DecoderState::NInt>(_minor_type)) {
+			_state = DecoderState::Error;
+			throw DecodeException("invalid integer type");
+		}
+	}
+	
+	void Decoder::decode_type_bytes() {
+		if(_minor_type < 24) {
+			_state = DecoderState::BytesData;
+			_current_length = _minor_type;
+		} else if(!decode_type_count_length<DecoderState::BytesSize>(_minor_type)) {
+			_state = DecoderState::Error;
+			throw DecodeException("invalid bytes type");
+		}
+	}
+	
+	void Decoder::decode_type_string() {
+		if(_minor_type < 24) {
+			_state = DecoderState::StringData;
+			_current_length = _minor_type;
+		} else if(!decode_type_count_length<DecoderState::StringSize>(_minor_type)) {
+			_state = DecoderState::Error;
+			throw DecodeException("invalid string type");
+		}
+	}
+	
+	void Decoder::decode_type_array() {
+		if(_minor_type < 24) {
+			_state = DecoderState::Array;
+			_current_length = 0;
+		} else if(!decode_type_count_length<DecoderState::Array>(_minor_type)) {
+			_state = DecoderState::Error;
+			throw DecodeException("invalid array type");
+		}
+	}
+	
+	void Decoder::decode_type_map() {
+		if(_minor_type < 24) {
+			_state = DecoderState::Map;
+			_current_length = 0;
+		} else if(!decode_type_count_length<DecoderState::Map>(_minor_type)) {
+			_state = DecoderState::Error;
+			throw DecodeException("invalid array type");
+		}
+	}
+	
+	void Decoder::decode_type_tag() {
+		if(_minor_type < 24) {
+			_state = DecoderState::Tag;
+			_current_length = 0;
+		} else if(!decode_type_count_length<DecoderState::Tag>(_minor_type)) {
+			_state = DecoderState::Error;
+			throw DecodeException("invalid tag type");
+		}
+	}
+	
+	void Decoder::decode_type_special() {
+		if(_minor_type < 24) {
+			_state = DecoderState::Special;
+			_current_length = 0;
+		} else if(!decode_type_count_length<DecoderState::Special>(_minor_type)) {
+			_state = DecoderState::Error;
+			throw DecodeException("invalid special type");
+		}
+	}
+	
+	void Decoder::decode_type() {
+		uint8_t type = _in->get_int8();
+		uint8_t major_type = type >> 5;
+		_minor_type = (uint8_t)(type & 0b00011111);
 		
-		unsigned int temp;
-		while(1) {
-			if(_state == DecoderState::Type) {
-				if(_in->has_bytes(1)) {
-					unsigned char type = _in->get_byte();
-					unsigned char majorType = type >> 5;
-					unsigned char minorType = (unsigned char)(type & 31);
-					
-					switch(majorType) {
-						case 0: // positive integer
-							if(minorType < 24) {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_int(minorType));
-							} else if(minorType == 24) { // 1 byte
-								_currentLength = 1;
-								_state = DecoderState::PInt;
-							} else if(minorType == 25) { // 2 byte
-								_currentLength = 2;
-								_state = DecoderState::PInt;
-							} else if(minorType == 26) { // 4 byte
-								_currentLength = 4;
-								_state = DecoderState::PInt;
-							} else if(minorType == 27) { // 8 byte
-								_currentLength = 8;
-								_state = DecoderState::PInt;
-							} else {
-								_state = DecoderState::Error;
-								throw DecodeException("invalid integer type");
-							}
-							break;
-						case 1: // negative integer
-							if(minorType < 24) {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_int(-1 - minorType));
-							} else if(minorType == 24) { // 1 byte
-								_currentLength = 1;
-								_state = DecoderState::NInt;
-							} else if(minorType == 25) { // 2 byte
-								_currentLength = 2;
-								_state = DecoderState::NInt;
-							} else if(minorType == 26) { // 4 byte
-								_currentLength = 4;
-								_state = DecoderState::NInt;
-							} else if(minorType == 27) { // 8 byte
-								_currentLength = 8;
-								_state = DecoderState::NInt;
-							} else {
-								_state = DecoderState::Error;
-								throw DecodeException("invalid integer type");
-							}
-							break;
-						case 2: // bytes
-							if(minorType < 24) {
-								_state = DecoderState::BytesData;
-								_currentLength = minorType;
-							} else if(minorType == 24) {
-								_state = DecoderState::BytesSize;
-								_currentLength = 1;
-							} else if(minorType == 25) { // 2 byte
-								_currentLength = 2;
-								_state = DecoderState::BytesSize;
-							} else if(minorType == 26) { // 4 byte
-								_currentLength = 4;
-								_state = DecoderState::BytesSize;
-							} else if(minorType == 27) { // 8 byte
-								_currentLength = 8;
-								_state = DecoderState::BytesSize;
-							} else {
-								_state = DecoderState::Error;
-								throw DecodeException("invalid bytes type");
-							}
-							break;
-						case 3: // string
-							if(minorType < 24) {
-								_state = DecoderState::StringData;
-								_currentLength = minorType;
-							} else if(minorType == 24) {
-								_state = DecoderState::StringSize;
-								_currentLength = 1;
-							} else if(minorType == 25) { // 2 byte
-								_currentLength = 2;
-								_state = DecoderState::StringSize;
-							} else if(minorType == 26) { // 4 byte
-								_currentLength = 4;
-								_state = DecoderState::StringSize;
-							} else if(minorType == 27) { // 8 byte
-								_currentLength = 8;
-								_state = DecoderState::StringSize;
-							} else {
-								_state = DecoderState::Error;
-								throw DecodeException("invalid string type");
-							}
-							break;
-						case 4: // array
-							if(minorType < 24) {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::create_array(minorType));
-							} else if(minorType == 24) {
-								_state = DecoderState::Array;
-								_currentLength = 1;
-							} else if(minorType == 25) { // 2 byte
-								_currentLength = 2;
-								_state = DecoderState::Array;
-							} else if(minorType == 26) { // 4 byte
-								_currentLength = 4;
-								_state = DecoderState::Array;
-							} else if(minorType == 27) { // 8 byte
-								_currentLength = 8;
-								_state = DecoderState::Array;
-							} else {
-								_state = DecoderState::Error;
-								throw DecodeException("invalid array type");
-							}
-							break;
-						case 5: // map
-							if(minorType < 24) {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::create_map(minorType));
-							} else if(minorType == 24) {
-								_state = DecoderState::Map;
-								_currentLength = 1;
-							} else if(minorType == 25) { // 2 byte
-								_currentLength = 2;
-								_state = DecoderState::Map;
-							} else if(minorType == 26) { // 4 byte
-								_currentLength = 4;
-								_state = DecoderState::Map;
-							} else if(minorType == 27) { // 8 byte
-								_currentLength = 8;
-								_state = DecoderState::Map;
-							} else {
-								_state = DecoderState::Error;
-								throw DecodeException("invalid array type");
-							}
-							break;
-						case 6: // tag
-							if(minorType < 24) {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_tag(minorType));
-							} else if(minorType == 24) {
-								_state = DecoderState::Tag;
-								_currentLength = 1;
-							} else if(minorType == 25) { // 2 byte
-								_currentLength = 2;
-								_state = DecoderState::Tag;
-							} else if(minorType == 26) { // 4 byte
-								_currentLength = 4;
-								_state = DecoderState::Tag;
-							} else if(minorType == 27) { // 8 byte
-								_currentLength = 8;
-								_state = DecoderState::Tag;
-							} else {
-								_state = DecoderState::Error;
-								throw DecodeException("invalid tag type");
-							}
-							break;
-						case 7: // special
-							if(minorType < 20) {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_special(minorType));
-							} else if(minorType == 20) {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_bool(false));
-							} else if(minorType == 21) {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_bool(true));
-							} else if(minorType == 22) {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::create_null());
-							} else if(minorType == 23) {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::create_undefined());
-							} else if(minorType == 24) {
-								_state = DecoderState::Special;
-								_currentLength = 1;
-							} else if(minorType == 25) { // 2 byte
-								_currentLength = 2;
-								_state = DecoderState::Special;
-							} else if(minorType == 26) { // 4 byte
-								_currentLength = 4;
-								_state = DecoderState::Special;
-							} else if(minorType == 27) { // 8 byte
-								_currentLength = 8;
-								_state = DecoderState::Special;
-							} else {
-								_state = DecoderState::Error;
-								throw DecodeException("invalid special type");
-							}
-							break;
-					}
-				} else
-					break;
-			} else if(_state == DecoderState::PInt) {
-				if(_in->has_bytes(_currentLength)) {
-					switch(_currentLength) {
-						case 1:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_int(_in->get_byte()));
-							_state = DecoderState::Type;
-							break;
-						case 2:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_int(_in->get_short()));
-							_state = DecoderState::Type;
-							break;
-						case 4:
-							temp = _in->get_int();
-							if(temp <= INT_MAX) {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_int(temp));
-							} else {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_extra_integer(temp, true));
-							}
-							_state = DecoderState::Type;
-							break;
-						case 8:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_extra_integer(_in->get_long(), true));
-							_state = DecoderState::Type;
-							break;
-					}
-				} else
-					break;
-			} else if(_state == DecoderState::NInt) {
-				if(_in->has_bytes(_currentLength)) {
-					switch(_currentLength) {
-						case 1:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_int(-(int)_in->get_byte() - 1));
-							_state = DecoderState::Type;
-							break;
-						case 2:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_int(-(int)_in->get_short() - 1));
-							_state = DecoderState::Type;
-							break;
-						case 4:
-							temp = _in->get_int();
-							if(temp <= INT_MAX) {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_int(-(int)temp - 1));
-							} else {
-								put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_extra_integer(temp + 1, false));
-							}
-							_state = DecoderState::Type;
-							break;
-						case 8:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_extra_integer(_in->get_long() + 1, false));
-							break;
-					}
-				} else
-					break;
-			} else if(_state == DecoderState::BytesSize) {
-				if(_in->has_bytes(_currentLength)) {
-					switch(_currentLength) {
-						case 1:
-							_currentLength = _in->get_byte();
-							_state = DecoderState::BytesData;
-							break;
-						case 2:
-							_currentLength = _in->get_short();
-							_state = DecoderState::BytesData;
-							break;
-						case 4:
-							_currentLength = _in->get_int();
-							_state = DecoderState::BytesData;
-							break;
-						case 8:
-							_state = DecoderState::Error;
-							throw DecodeException("extra long bytes");
-							break;
-					}
-				} else
-					break;
-			} else if(_state == DecoderState::BytesData) {
-				if(_in->has_bytes(_currentLength)) {
-					std::vector<char> data(_currentLength);
-					_in->get_bytes(data.data(), _currentLength);
-					_state = DecoderState::Type;
-					put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_bytes(data));
-				} else
-					break;
-			} else if(_state == DecoderState::StringSize) {
-				if(_in->has_bytes(_currentLength)) {
-					switch(_currentLength) {
-						case 1:
-							_currentLength = _in->get_byte();
-							_state = DecoderState::StringData;
-							break;
-						case 2:
-							_currentLength = _in->get_short();
-							_state = DecoderState::StringData;
-							break;
-						case 4:
-							_currentLength = _in->get_int();
-							_state = DecoderState::StringData;
-							break;
-						case 8:
-							_state = DecoderState::Error;
-							throw DecodeException("extra long array");
-							break;
-					}
-				} else
-					break;
-			} else if(_state == DecoderState::StringData) {
-				if(_in->has_bytes(_currentLength)) {
-					std::vector<char> data(_currentLength);
-					_in->get_bytes(data.data(), _currentLength);
-					_state = DecoderState::Type;
-					std::string str(data.data(), (size_t)_currentLength);
-					put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_string(str));
-				} else
-					break;
-			} else if(_state == DecoderState::Array) {
-				if(_in->has_bytes(_currentLength)) {
-					switch(_currentLength) {
-						case 1:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::create_array(_in->get_byte()));
-							_state = DecoderState::Type;
-							break;
-						case 2:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::create_array(_in->get_short()));
-							_state = DecoderState::Type;
-							break;
-						case 4:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::create_array(_in->get_int()));
-							_state = DecoderState::Type;
-							break;
-						case 8:
-							_state = DecoderState::Error;
-							throw DecodeException("extra long array");
-							break;
-					}
-				} else
-					break;
-			} else if(_state == DecoderState::Map) {
-				if(_in->has_bytes(_currentLength)) {
-					switch(_currentLength) {
-						case 1:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::create_map(_in->get_byte()));
-							_state = DecoderState::Type;
-							break;
-						case 2:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::create_map(_currentLength = _in->get_short()));
-							_state = DecoderState::Type;
-							break;
-						case 4:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::create_map(_in->get_int()));
-							_state = DecoderState::Type;
-							break;
-						case 8:
-							_state = DecoderState::Error;
-							throw DecodeException("extra long map");
-							break;
-					}
-				} else
-					break;
-			} else if(_state == DecoderState::Tag) {
-				if(_in->has_bytes(_currentLength)) {
-					switch(_currentLength) {
-						case 1:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_tag(_in->get_byte()));
-							_state = DecoderState::Type;
-							break;
-						case 2:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_tag(_in->get_short()));
-							_state = DecoderState::Type;
-							break;
-						case 4:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_tag(_in->get_int()));
-							_state = DecoderState::Type;
-							break;
-						case 8:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_extra_tag(_in->get_long()));
-							_state = DecoderState::Type;
-							break;
-					}
-				} else
-					break;
-			} else if(_state == DecoderState::Special) {
-				if(_in->has_bytes(_currentLength)) {
-					switch(_currentLength) {
-						case 1:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_special(_in->get_byte()));
-							_state = DecoderState::Type;
-							break;
-						case 2:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_special(_in->get_short()));
-							_state = DecoderState::Type;
-							break;
-						case 4:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_special(_in->get_int()));
-							_state = DecoderState::Type;
-							break;
-						case 8:
-							put_decoded_value(result, structures_stack, iter_in_map_key, map_key_temp, Object::from_extra_special(_in->get_long()));
-							_state = DecoderState::Type;
-							break;
-					}
-				} else
-					break;
-			} else if(_state == DecoderState::Error) {
+		switch(major_type) {
+			case 0: // positive integer
+				decode_type_p_int();
 				break;
-			} else {
-				throw DecodeException("UNKNOWN STATE");
+			case 1: // negative integer
+				decode_type_n_int();
+				break;
+			case 2: // bytes
+				decode_type_bytes();
+				break;
+			case 3: // string
+				decode_type_string();
+				break;
+			case 4: // array
+				decode_type_array();
+				break;
+			case 5: // map
+				decode_type_map();
+				break;
+			case 6: // tag
+				decode_type_tag();
+				break;
+			case 7: // special
+				decode_type_special();
+				break;
+		}
+	}
+	
+	PObject Decoder::decode_p_int() {
+		_state = DecoderState::Type;
+		if(_current_length != 8) {
+			switch(_current_length) {
+				case 0:
+					return Object::from_int(_minor_type);
+				case 1:
+					return Object::from_int(_in->get_int8());
+				case 2:
+					return Object::from_int(_in->get_int16());
+				case 4:
+					unsigned int temp = _in->get_int32();
+					if(temp <= INT_MAX) {
+						return Object::from_int(temp);
+					} else {
+						return Object::from_extra_int(temp, true);
+					}
+			}
+		} else {
+			return Object::from_extra_int(_in->get_int64(), true);
+		}
+		_state = DecoderState::Error;
+		throw DecodeException("incorrect length");
+	}
+	
+	PObject Decoder::decode_n_int() {
+		_state = DecoderState::Type;
+		if(_current_length != 8) {
+			switch(_current_length) {
+				case 0:
+					return Object::from_int(-1 - _minor_type);
+				case 1:
+					return Object::from_int(-(int)_in->get_int8() - 1);
+				case 2:
+					return Object::from_int(-(int)_in->get_int16() - 1);
+				case 4:
+					unsigned int temp = _in->get_int32();
+					if(temp <= INT_MAX) {
+						return Object::from_int(-(int)temp - 1);
+					} else {
+						return Object::from_extra_int(temp + 1, false);
+					}
+			}
+		} else {
+			return Object::from_extra_int(_in->get_int64() + 1, false);
+		}
+		_state = DecoderState::Error;
+		throw DecodeException("incorrect length");
+	}
+	
+	void Decoder::decode_bytes_size() {
+		if(_current_length != 8) {
+			_state = DecoderState::BytesData;
+			switch(_current_length) {
+				case 1:
+					_current_length = _in->get_int8();
+					break;
+				case 2:
+					_current_length = _in->get_int16();
+					break;
+				case 4:
+					_current_length = _in->get_int32();
+					break;
+			}
+		} else {
+			_state = DecoderState::Error;
+			throw DecodeException("extra long bytes");
+		}
+	}
+	
+	BytesValue Decoder::decode_bytes_data() {
+		_state = DecoderState::Type;
+		std::vector<char> data(_current_length);
+		_in->get_bytes(data.data(), _current_length);
+		return data;
+	}
+	
+	void Decoder::decode_string_size() {
+		if(_current_length != 8) {
+			_state = DecoderState::StringData;
+			switch(_current_length) {
+				case 1:
+					_current_length = _in->get_int8();
+					break;
+				case 2:
+					_current_length = _in->get_int16();
+					break;
+				case 4:
+					_current_length = _in->get_int32();
+					break;
+			}
+		} else {
+			_state = DecoderState::Error;
+			throw DecodeException("extra long array");
+		}
+	}
+	
+	StringValue Decoder::decode_string_data() {
+		_state = DecoderState::Type;
+		std::vector<char> data(_current_length);
+		_in->get_bytes(data.data(), _current_length);
+		std::string str(data.data(), (size_t)_current_length);
+		return str;
+	}
+	
+	uint32_t Decoder::decode_array_size() {
+		if(_current_length != 8) {
+			_state = DecoderState::Type;
+			switch(_current_length) {
+				case 0:
+					return _minor_type;
+				case 1:
+					return _in->get_int8();
+				case 2:
+					return _in->get_int16();
+				case 4:
+					return _in->get_int32();
 			}
 		}
-		if(!result)
+		_state = DecoderState::Error;
+		throw DecodeException("extra long array");
+	}
+	
+	uint32_t Decoder::decode_map_size() {
+		if(_current_length != 8) {
+			_state = DecoderState::Type;
+			switch(_current_length) {
+				case 0:
+					return _minor_type;
+				case 1:
+					return _in->get_int8();
+				case 2:
+					return _in->get_int16();
+				case 4:
+					return _in->get_int32();
+			}
+		}
+		_state = DecoderState::Error;
+		throw DecodeException("extra long map");
+	}
+	
+	PObject Decoder::decode_tag() {
+		_state = DecoderState::Type;
+		switch(_current_length) {
+			case 0:
+				return Object::from_tag(_minor_type);
+			case 1:
+				return Object::from_tag(_in->get_int8());
+			case 2:
+				return Object::from_tag(_in->get_int16());
+			case 4:
+				return Object::from_tag(_in->get_int32());
+			case 8:
+				return Object::from_extra_tag(_in->get_int64());
+		}
+		_state = DecoderState::Error;
+		throw DecodeException("incorrect length");
+	}
+	
+	PObject Decoder::decode_special() {
+		_state = DecoderState::Type;
+		if(_minor_type < 20) {
+			return Object::from_special(_minor_type);
+		} else if(_minor_type == 20) {
+			return Object::from_bool(false);
+		} else if(_minor_type == 21) {
+			return Object::from_bool(true);
+		} else if(_minor_type == 22) {
+			return Object::create_null();
+		} else if(_minor_type == 23) {
+			return Object::create_undefined();
+		}
+		switch(_current_length) {
+			case 1:
+				return Object::from_special(_in->get_int8());
+			case 2:
+				return Object::from_special(_in->get_int16());
+			case 4:
+				return Object::from_special(_in->get_int32());
+			case 8:
+				return Object::from_extra_special(_in->get_int64());
+		}
+		_state = DecoderState::Error;
+		throw DecodeException("incorrect length");
+	}
+	
+	PObject Decoder::run() {
+		DecodeData decode_data{};
+		
+		while(true) {
+			if(_state == DecoderState::Error) {
+				break;
+			} else if(_state == DecoderState::Type) {
+				if(!_in->has_bytes(1))
+					break;
+				decode_type();
+			} else {
+				if(!_in->has_bytes(_current_length))
+					break;
+				switch(_state) {
+					case DecoderState::PInt:
+						put_decoded_value(decode_data, decode_p_int());
+						break;
+					case DecoderState::NInt:
+						put_decoded_value(decode_data, decode_n_int());
+						break;
+					case DecoderState::BytesSize:
+						decode_bytes_size();
+						break;
+					case DecoderState::BytesData:
+						put_decoded_value(decode_data, Object::from_bytes(decode_bytes_data()));
+						break;
+					case DecoderState::StringSize:
+						decode_string_size();
+						break;
+					case DecoderState::StringData:
+						put_decoded_value(decode_data, Object::from_string(decode_string_data()));
+						break;
+					case DecoderState::Array:
+						put_decoded_value(decode_data, Object::create_array(decode_array_size()));
+						break;
+					case DecoderState::Map:
+						put_decoded_value(decode_data, Object::create_map(decode_map_size()));
+						break;
+					case DecoderState::Tag:
+						put_decoded_value(decode_data, decode_tag());
+						break;
+					case DecoderState::Special:
+						put_decoded_value(decode_data, decode_special());
+						break;
+					default:
+						break;
+				}
+			}
+		}
+		if(!decode_data.result)
 			throw DecodeException("cbor decoded nothing");
-		if(!structures_stack.empty())
+		if(!decode_data.structures_stack.empty())
 			throw DecodeException("cbor decode fail with not finished structures");
-		return result;
+		return decode_data.result;
+	}
+	
+	Decoder::~Decoder() {
 	}
 }
 

@@ -50,7 +50,7 @@ int main() {
 				encoder.write_string("hello");
 				encoder.write_string("world");
 			}
-			encoder.write_bytes((const unsigned char*)"abcde", 5);
+			encoder.write_bytes((const uint8_t*)"abcde", 5);
         }
     }
 
@@ -58,8 +58,8 @@ int main() {
         cbor::Input input(output.data(), output.size());
         cbor::Decoder decoder(input);
         auto result = decoder.run();
-		assert(result->type == cbor::ObjectType::Array & result->array_or_map_size == 13);
-		const auto& array_value = result->as<cbor::ArrayValue>();
+		assert(result->object_type() == cbor::ObjectType::Array & result->array_or_map_size == 13);
+		const auto& array_value = result->as<cbor::ObjectType::Array>();
 		auto obj1 = array_value[0]->as_int();
 		auto obj2 = array_value[1]->as_string();
 		auto obj3 = array_value[2]->as_int();
@@ -86,7 +86,7 @@ int main() {
 
 		cbor::OutputDynamic output2;
 		cbor::Encoder encoder2(output2);
-		encoder2.write_cbor_object(result);
+		encoder2.write_object(result);
     }
 
     return 0;

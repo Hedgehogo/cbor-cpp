@@ -16,29 +16,33 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace cbor {
 	class Input {
 	private:
-		unsigned char* _data;
+		uint8_t* _data;
 		int _size;
 		int _offset;
 	
 	public:
 		Input(void* data, int size);
 		
-		~Input();
-		
 		bool has_bytes(int count);
 		
-		unsigned char get_byte();
+		bool is_empty();
 		
-		unsigned short get_short();
+		uint8_t get_int8();
 		
-		unsigned int get_int();
+		uint16_t get_int16();
 		
-		unsigned long long get_long();
+		uint32_t get_int32();
+		
+		uint64_t get_int64();
 		
 		void get_bytes(void* to, int count);
+		
+		~Input();
 	};
 }
 

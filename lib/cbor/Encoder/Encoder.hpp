@@ -41,9 +41,9 @@ namespace cbor {
 		
 		void write_int(uint64_t value);
 		
-		void write_bytes(const unsigned char* data, unsigned int size);
+		void write_bytes(const uint8_t* data, uint32_t size);
 		
-		void write_string(const char* data, unsigned int size);
+		void write_string(const char* data, uint32_t size);
 		
 		void write_string(const std::string str);
 		
@@ -51,7 +51,7 @@ namespace cbor {
 		
 		void write_map(int size);
 		
-		void write_tag(const unsigned int tag);
+		void write_tag(const uint32_t tag);
 		
 		void write_special(int special);
 		
@@ -59,7 +59,7 @@ namespace cbor {
 		
 		void write_undefined();
 		
-		void write_cbor_object(PObject value);
+		void write_object(PObject value);
 	
 	private:
 		void write_type_value(int major_type, uint32_t value);

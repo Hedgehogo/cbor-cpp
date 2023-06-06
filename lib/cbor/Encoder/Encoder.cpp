@@ -27,50 +27,50 @@ namespace cbor {
 	void Encoder::write_type_value(int major_type, uint32_t value) {
 		major_type <<= 5;
 		if(value < 24) {
-			_out->put_byte((unsigned char)(major_type | value));
+			_out->put_byte((uint8_t)(major_type | value));
 		} else if(value < 256) {
-			_out->put_byte((unsigned char)(major_type | 24));
-			_out->put_byte((unsigned char)value);
+			_out->put_byte((uint8_t)(major_type | 24));
+			_out->put_byte((uint8_t)value);
 		} else if(value < 65536) {
-			_out->put_byte((unsigned char)(major_type | 25));
-			_out->put_byte((unsigned char)(value >> 8));
-			_out->put_byte((unsigned char)value);
+			_out->put_byte((uint8_t)(major_type | 25));
+			_out->put_byte((uint8_t)(value >> 8));
+			_out->put_byte((uint8_t)value);
 		} else {
-			_out->put_byte((unsigned char)(major_type | 26));
-			_out->put_byte((unsigned char)(value >> 24));
-			_out->put_byte((unsigned char)(value >> 16));
-			_out->put_byte((unsigned char)(value >> 8));
-			_out->put_byte((unsigned char)value);
+			_out->put_byte((uint8_t)(major_type | 26));
+			_out->put_byte((uint8_t)(value >> 24));
+			_out->put_byte((uint8_t)(value >> 16));
+			_out->put_byte((uint8_t)(value >> 8));
+			_out->put_byte((uint8_t)value);
 		}
 	}
 	
 	void Encoder::write_type_value(int major_type, uint64_t value) {
 		major_type <<= 5;
 		if(value < 24ULL) {
-			_out->put_byte((unsigned char)(major_type | value));
+			_out->put_byte((uint8_t)(major_type | value));
 		} else if(value < 256ULL) {
-			_out->put_byte((unsigned char)(major_type | 24));
-			_out->put_byte((unsigned char)value);
+			_out->put_byte((uint8_t)(major_type | 24));
+			_out->put_byte((uint8_t)value);
 		} else if(value < 65536ULL) {
-			_out->put_byte((unsigned char)(major_type | 25));
-			_out->put_byte((unsigned char)(value >> 8));
-			_out->put_byte((unsigned char)value);
+			_out->put_byte((uint8_t)(major_type | 25));
+			_out->put_byte((uint8_t)(value >> 8));
+			_out->put_byte((uint8_t)value);
 		} else if(value < 4294967296ULL) {
-			_out->put_byte((unsigned char)(major_type | 26));
-			_out->put_byte((unsigned char)(value >> 24));
-			_out->put_byte((unsigned char)(value >> 16));
-			_out->put_byte((unsigned char)(value >> 8));
-			_out->put_byte((unsigned char)value);
+			_out->put_byte((uint8_t)(major_type | 26));
+			_out->put_byte((uint8_t)(value >> 24));
+			_out->put_byte((uint8_t)(value >> 16));
+			_out->put_byte((uint8_t)(value >> 8));
+			_out->put_byte((uint8_t)value);
 		} else {
-			_out->put_byte((unsigned char)(major_type | 27));
-			_out->put_byte((unsigned char)(value >> 56));
-			_out->put_byte((unsigned char)(value >> 48));
-			_out->put_byte((unsigned char)(value >> 40));
-			_out->put_byte((unsigned char)(value >> 32));
-			_out->put_byte((unsigned char)(value >> 24));
-			_out->put_byte((unsigned char)(value >> 16));
-			_out->put_byte((unsigned char)(value >> 8));
-			_out->put_byte((unsigned char)value);
+			_out->put_byte((uint8_t)(major_type | 27));
+			_out->put_byte((uint8_t)(value >> 56));
+			_out->put_byte((uint8_t)(value >> 48));
+			_out->put_byte((uint8_t)(value >> 40));
+			_out->put_byte((uint8_t)(value >> 32));
+			_out->put_byte((uint8_t)(value >> 24));
+			_out->put_byte((uint8_t)(value >> 16));
+			_out->put_byte((uint8_t)(value >> 8));
+			_out->put_byte((uint8_t)value);
 		}
 	}
 	
@@ -98,55 +98,55 @@ namespace cbor {
 		}
 	}
 	
-	void Encoder::write_bytes(const unsigned char* data, unsigned int size) {
+	void Encoder::write_bytes(const uint8_t* data, uint32_t size) {
 		write_type_value(2, size);
 		_out->put_bytes(data, size);
 	}
 	
-	void Encoder::write_string(const char* data, unsigned int size) {
+	void Encoder::write_string(const char* data, uint32_t size) {
 		write_type_value(3, size);
-		_out->put_bytes((const unsigned char*)data, size);
+		_out->put_bytes((const uint8_t*)data, size);
 	}
 	
 	void Encoder::write_string(const std::string str) {
-		write_type_value(3, (unsigned int)str.size());
-		_out->put_bytes((const unsigned char*)str.c_str(), (int)str.size());
+		write_type_value(3, (uint32_t)str.size());
+		_out->put_bytes((const uint8_t*)str.c_str(), (int)str.size());
 	}
 	
 	
 	void Encoder::write_array(int size) {
-		write_type_value(4, (unsigned int)size);
+		write_type_value(4, (uint32_t)size);
 	}
 	
 	void Encoder::write_map(int size) {
-		write_type_value(5, (unsigned int)size);
+		write_type_value(5, (uint32_t)size);
 	}
 	
-	void Encoder::write_tag(const unsigned int tag) {
+	void Encoder::write_tag(const uint32_t tag) {
 		write_type_value(6, tag);
 	}
 	
 	void Encoder::write_special(int special) {
-		write_type_value(7, (unsigned int)special);
+		write_type_value(7, (uint32_t)special);
 	}
 	
 	void Encoder::write_bool(bool value) {
 		if(value) {
-			_out->put_byte((unsigned char)0xf5);
+			_out->put_byte((uint8_t)0xf5);
 		} else {
-			_out->put_byte((unsigned char)0xf4);
+			_out->put_byte((uint8_t)0xf4);
 		}
 	}
 	
 	void Encoder::write_null() {
-		_out->put_byte((unsigned char)0xf6);
+		_out->put_byte((uint8_t)0xf6);
 	}
 	
 	void Encoder::write_undefined() {
-		_out->put_byte((unsigned char)0xf7);
+		_out->put_byte((uint8_t)0xf7);
 	}
 	
-	void Encoder::write_cbor_object(PObject value) {
+	void Encoder::write_object(PObject value) {
 		if(!value)
 			return;
 		switch(value->object_type()) {
@@ -163,33 +163,33 @@ namespace cbor {
 				write_int(value->as_int());
 				return;
 			case ObjectType::ExtraInt:
-				write_int(value->as<uint64_t>());
+				write_int(value->as<ObjectType::ExtraInt>().second);
 				return;
 			case ObjectType::String:
 				write_string(value->as_string());
 				return;
 			case ObjectType::Bytes: {
 				const auto& bytes = value->as_bytes();
-				write_bytes((const unsigned char*)bytes.data(), bytes.size());
+				write_bytes((const uint8_t*)bytes.data(), bytes.size());
 				return;
 			}
 			case ObjectType::Tag:
 				write_tag(value->as_tag());
 				return;
 			case ObjectType::ExtraTag:
-				write_tag(value->as<uint64_t>());
+				write_tag(value->as<ObjectType::ExtraTag>());
 				return;
 			case ObjectType::Special:
 				write_special(value->as_special());
 				return;
 			case ObjectType::ExtraSpecial:
-				write_special(value->as<uint64_t>());
+				write_special(value->as<ObjectType::ExtraSpecial>());
 				return;
 			case ObjectType::Array: {
 				const auto& array_value = value->as_array();
 				write_array(array_value.size());
 				for(const auto& item: array_value) {
-					write_cbor_object(item);
+					write_object(item);
 				}
 				return;
 			}
@@ -198,7 +198,7 @@ namespace cbor {
 				write_map(map_value.size());
 				for(const auto& p: map_value) {
 					write_string(p.first);
-					write_cbor_object(p.second);
+					write_object(p.second);
 				}
 				return;
 			}

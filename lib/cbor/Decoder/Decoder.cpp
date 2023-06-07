@@ -31,6 +31,10 @@ namespace cbor {
 		return _in->has_bytes(count);
 	}
 	
+	void Decoder::set_type_state() {
+		_state = DecoderState::Type;
+	}
+	
 	DecoderState Decoder::get_state() {
 		return _state;
 	}
@@ -92,7 +96,7 @@ namespace cbor {
 		if(_minor_type < 24) {
 			_state = DecoderState::PInt;
 			_current_length = 0;
-		} else if(!decode_type_count_length<DecoderState::PInt>(_minor_type)) {
+		} else if(!decode_type_count_length<DecoderState::PInt, DecoderState::ExtraPInt>(_minor_type)) {
 			_state = DecoderState::Error;
 			throw DecodeException("invalid integer type");
 		}
@@ -102,7 +106,7 @@ namespace cbor {
 		if(_minor_type < 24) {
 			_state = DecoderState::NInt;
 			_current_length = 0;
-		} else if(!decode_type_count_length<DecoderState::NInt>(_minor_type)) {
+		} else if(!decode_type_count_length<DecoderState::NInt, DecoderState::ExtraNInt>(_minor_type)) {
 			_state = DecoderState::Error;
 			throw DecodeException("invalid integer type");
 		}
@@ -152,17 +156,29 @@ namespace cbor {
 		if(_minor_type < 24) {
 			_state = DecoderState::Tag;
 			_current_length = 0;
-		} else if(!decode_type_count_length<DecoderState::Tag>(_minor_type)) {
+		} else if(!decode_type_count_length<DecoderState::Tag, DecoderState::ExtraTag>(_minor_type)) {
 			_state = DecoderState::Error;
 			throw DecodeException("invalid tag type");
 		}
 	}
 	
 	void Decoder::decode_type_special() {
-		if(_minor_type < 24) {
+		if(_minor_type < 20) {
 			_state = DecoderState::Special;
 			_current_length = 0;
-		} else if(!decode_type_count_length<DecoderState::Special>(_minor_type)) {
+		} else if(_minor_type == 20) {
+			_state = DecoderState::BoolFalse;
+			_current_length = 0;
+		} else if(_minor_type == 21) {
+			_state = DecoderState::BoolTrue;
+			_current_length = 0;
+		} else if(_minor_type == 22) {
+			_state = DecoderState::Null;
+			_current_length = 0;
+		} else if(_minor_type == 23) {
+			_state = DecoderState::Undefined;
+			_current_length = 0;
+		} else if(!decode_type_count_length<DecoderState::Special, DecoderState::ExtraSpecial>(_minor_type)) {
 			_state = DecoderState::Error;
 			throw DecodeException("invalid special type");
 		}
@@ -201,51 +217,33 @@ namespace cbor {
 		}
 	}
 	
-	PObject Decoder::decode_p_int() {
+	IntValue Decoder::decode_p_int() {
 		_state = DecoderState::Type;
-		if(_current_length != 8) {
-			switch(_current_length) {
-				case 0:
-					return Object::from_int(_minor_type);
-				case 1:
-					return Object::from_int(_in->get_int8());
-				case 2:
-					return Object::from_int(_in->get_int16());
-				case 4:
-					unsigned int temp = _in->get_int32();
-					if(temp <= INT_MAX) {
-						return Object::from_int(temp);
-					} else {
-						return Object::from_extra_int(temp, true);
-					}
-			}
-		} else {
-			return Object::from_extra_int(_in->get_int64(), true);
+		switch(_current_length) {
+			case 0:
+				return _minor_type;
+			case 1:
+				return _in->get_int8();
+			case 2:
+				return _in->get_int16();
+			case 4:
+				return _in->get_int32();
 		}
 		_state = DecoderState::Error;
 		throw DecodeException("incorrect length");
 	}
 	
-	PObject Decoder::decode_n_int() {
+	IntValue Decoder::decode_n_int() {
 		_state = DecoderState::Type;
-		if(_current_length != 8) {
-			switch(_current_length) {
-				case 0:
-					return Object::from_int(-1 - _minor_type);
-				case 1:
-					return Object::from_int(-(int)_in->get_int8() - 1);
-				case 2:
-					return Object::from_int(-(int)_in->get_int16() - 1);
-				case 4:
-					unsigned int temp = _in->get_int32();
-					if(temp <= INT_MAX) {
-						return Object::from_int(-(int)temp - 1);
-					} else {
-						return Object::from_extra_int(temp + 1, false);
-					}
-			}
-		} else {
-			return Object::from_extra_int(_in->get_int64() + 1, false);
+		switch(_current_length) {
+			case 0:
+				return -1 - _minor_type;
+			case 1:
+				return -(int64_t)_in->get_int8() - 1;
+			case 2:
+				return -(int64_t)_in->get_int16() - 1;
+			case 4:
+				return -(int64_t)_in->get_int32() - 1;
 		}
 		_state = DecoderState::Error;
 		throw DecodeException("incorrect length");
@@ -342,49 +340,56 @@ namespace cbor {
 		throw DecodeException("extra long map");
 	}
 	
-	PObject Decoder::decode_tag() {
+	TagValue Decoder::decode_tag() {
 		_state = DecoderState::Type;
 		switch(_current_length) {
 			case 0:
-				return Object::from_tag(_minor_type);
+				return _minor_type;
 			case 1:
-				return Object::from_tag(_in->get_int8());
+				return _in->get_int8();
 			case 2:
-				return Object::from_tag(_in->get_int16());
+				return _in->get_int16();
 			case 4:
-				return Object::from_tag(_in->get_int32());
-			case 8:
-				return Object::from_extra_tag(_in->get_int64());
+				return _in->get_int32();
 		}
 		_state = DecoderState::Error;
-		throw DecodeException("incorrect length");
+		throw DecodeException("extra long tag");
 	}
 	
-	PObject Decoder::decode_special() {
+	SpecialValue Decoder::decode_special() {
 		_state = DecoderState::Type;
-		if(_minor_type < 20) {
-			return Object::from_special(_minor_type);
-		} else if(_minor_type == 20) {
-			return Object::from_bool(false);
-		} else if(_minor_type == 21) {
-			return Object::from_bool(true);
-		} else if(_minor_type == 22) {
-			return Object::create_null();
-		} else if(_minor_type == 23) {
-			return Object::create_undefined();
-		}
 		switch(_current_length) {
+			case 0:
+				return _minor_type;
 			case 1:
-				return Object::from_special(_in->get_int8());
+				return _in->get_int8();
 			case 2:
-				return Object::from_special(_in->get_int16());
+				return _in->get_int16();
 			case 4:
-				return Object::from_special(_in->get_int32());
-			case 8:
-				return Object::from_extra_special(_in->get_int64());
+				return _in->get_int32();
 		}
 		_state = DecoderState::Error;
-		throw DecodeException("incorrect length");
+		throw DecodeException("extra long special");
+	}
+	
+	ExtraIntValue Decoder::decode_extra_p_int() {
+		_state = DecoderState::Type;
+		return {true, _in->get_int64()};
+	}
+	
+	ExtraIntValue Decoder::decode_extra_n_int() {
+		_state = DecoderState::Type;
+		return {false, _in->get_int64() + 1};
+	}
+	
+	ExtraTagValue Decoder::decode_extra_tag() {
+		_state = DecoderState::Type;
+		return _in->get_int64();
+	}
+	
+	ExtraSpecialValue Decoder::decode_extra_special() {
+		_state = DecoderState::Type;
+		return _in->get_int64();
 	}
 	
 	PObject Decoder::run() {
@@ -402,10 +407,10 @@ namespace cbor {
 					break;
 				switch(_state) {
 					case DecoderState::PInt:
-						put_decoded_value(decode_data, decode_p_int());
+						put_decoded_value(decode_data, Object::from_int(decode_p_int()));
 						break;
 					case DecoderState::NInt:
-						put_decoded_value(decode_data, decode_n_int());
+						put_decoded_value(decode_data, Object::from_int(decode_n_int()));
 						break;
 					case DecoderState::BytesSize:
 						decode_bytes_size();
@@ -426,10 +431,38 @@ namespace cbor {
 						put_decoded_value(decode_data, Object::create_map(decode_map_size()));
 						break;
 					case DecoderState::Tag:
-						put_decoded_value(decode_data, decode_tag());
+						put_decoded_value(decode_data, Object::from_tag(decode_tag()));
 						break;
 					case DecoderState::Special:
-						put_decoded_value(decode_data, decode_special());
+						put_decoded_value(decode_data, Object::from_special(decode_special()));
+						break;
+					case DecoderState::BoolFalse:
+						_state = DecoderState::Type;
+						put_decoded_value(decode_data, Object::from_bool(false));
+						break;
+					case DecoderState::BoolTrue:
+						_state = DecoderState::Type;
+						put_decoded_value(decode_data, Object::from_bool(true));
+						break;
+					case DecoderState::Null:
+						_state = DecoderState::Type;
+						put_decoded_value(decode_data, Object::create_null());
+						break;
+					case DecoderState::Undefined:
+						_state = DecoderState::Type;
+						put_decoded_value(decode_data, Object::create_undefined());
+						break;
+					case DecoderState::ExtraPInt:
+						put_decoded_value(decode_data, Object::from_extra_int(decode_extra_p_int()));
+						break;
+					case DecoderState::ExtraNInt:
+						put_decoded_value(decode_data, Object::from_extra_int(decode_extra_n_int()));
+						break;
+					case DecoderState::ExtraTag:
+						put_decoded_value(decode_data, Object::from_extra_tag(decode_extra_tag()));
+						break;
+					case DecoderState::ExtraSpecial:
+						put_decoded_value(decode_data, Object::from_extra_special(decode_extra_special()));
 						break;
 					default:
 						break;

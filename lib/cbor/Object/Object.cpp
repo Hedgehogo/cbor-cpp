@@ -45,6 +45,10 @@ namespace cbor {
 		return from<ObjectType::Error>(value);
 	}
 	
+	PObject Object::from_extra_int(ExtraIntValue value) {
+		return from<ObjectType::ExtraInt>(value);
+	}
+	
 	PObject Object::from_extra_int(uint64_t value, bool sign) {
 		return from<ObjectType::ExtraInt>({sign, value});
 	}

@@ -193,6 +193,8 @@ namespace cbor {
 		
 		static PObject from_error(StringValue value);
 		
+		static PObject from_extra_int(ExtraIntValue value);
+		
 		static PObject from_extra_int(uint64_t value, bool sign);
 		
 		static PObject from_extra_tag(ExtraTagValue value);

@@ -32,7 +32,15 @@ namespace cbor {
 		Map,
 		Tag,
 		Special,
-		Error
+		BoolFalse,
+		BoolTrue,
+		Null,
+		Undefined,
+		Error,
+		ExtraPInt,
+		ExtraNInt,
+		ExtraTag,
+		ExtraSpecial,
 	};
 	
 	struct DecodeData {
@@ -49,7 +57,7 @@ namespace cbor {
 		int _current_length;
 		uint8_t _minor_type;
 		
-		template<DecoderState State>
+		template<DecoderState State, DecoderState LastState = State>
 		bool decode_type_count_length(unsigned char minor_type) {
 			if(minor_type == 24) { // 1 byte
 				_current_length = 1;
@@ -62,11 +70,10 @@ namespace cbor {
 				_state = State;
 			} else if(minor_type == 27) { // 8 byte
 				_current_length = 8;
-				_state = State;
+				_state = LastState;
 			} else {
 				return false;
 			}
-			_minor_type = 255;
 			return true;
 		}
 	
@@ -76,6 +83,8 @@ namespace cbor {
 		bool has_bytes();
 		
 		bool has_bytes(int count);
+		
+		void set_type_state();
 		
 		DecoderState get_state();
 		
@@ -97,9 +106,9 @@ namespace cbor {
 		
 		void decode_type();
 		
-		PObject decode_p_int();
+		IntValue decode_p_int();
 		
-		PObject decode_n_int();
+		IntValue decode_n_int();
 		
 		void decode_bytes_size();
 		
@@ -113,9 +122,17 @@ namespace cbor {
 		
 		uint32_t decode_map_size();
 		
-		PObject decode_tag();
+		TagValue decode_tag();
 		
-		PObject decode_special();
+		SpecialValue decode_special();
+		
+		ExtraIntValue decode_extra_p_int();
+		
+		ExtraIntValue decode_extra_n_int();
+		
+		ExtraTagValue decode_extra_tag();
+		
+		ExtraSpecialValue decode_extra_special();
 		
 		PObject run();
 		

@@ -25,7 +25,7 @@ namespace cbor {
 	class Encoder {
 	private:
 		Output* _out;
-		
+	
 	public:
 		Encoder(Output& out);
 		

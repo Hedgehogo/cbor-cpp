@@ -40,7 +40,7 @@ namespace cbor {
 	
 	uint32_t Input::get_int32() {
 		uint32_t value =
-            ((uint32_t)_data[_offset] << 24) |
+			((uint32_t)_data[_offset] << 24) |
 			((uint32_t)_data[_offset + 1] << 16) |
 			((uint32_t)_data[_offset + 2] << 8) |
 			((uint32_t)_data[_offset + 3]);

@@ -7,11 +7,11 @@
 
        http://www.apache.org/licenses/LICENSE-2.0
 
-	   Unless required by applicable law or agreed to in writing, software
-	   distributed under the License is distributed on an "AS IS" BASIS,
-	   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	   See the License for the specific language governing permissions and
-	   limitations under the License.
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
 */
 
 #include <stdio.h>
@@ -21,23 +21,23 @@
 #include <cassert>
 
 int main() {
-    cbor::OutputDynamic output;
-
-    { //encoding
-        cbor::Encoder encoder(output);
+	cbor::OutputDynamic output;
+	
+	{ //encoding
+		cbor::Encoder encoder(output);
 		// [123, "bar", 321, 321, "foo", true, false, null, undefined, [123], [], {"age": 18, "hello": "world"}, b"abcde"]
-        encoder.write_array(13);
-        {
-            encoder.write_int(123);
-            encoder.write_string("bar");
-            encoder.write_int(321);
-            encoder.write_int(321);
-            encoder.write_string("foo");
-            encoder.write_bool(true);
-            encoder.write_bool(false);
-            encoder.write_null();
-            encoder.write_undefined();
-
+		encoder.write_array(13);
+		{
+			encoder.write_int(123);
+			encoder.write_string("bar");
+			encoder.write_int(321);
+			encoder.write_int(321);
+			encoder.write_string("foo");
+			encoder.write_bool(true);
+			encoder.write_bool(false);
+			encoder.write_null();
+			encoder.write_undefined();
+			
 			encoder.write_array(1);
 			{
 				encoder.write_int(123);
@@ -51,13 +51,13 @@ int main() {
 				encoder.write_string("world");
 			}
 			encoder.write_bytes((const uint8_t*)"abcde", 5);
-        }
-    }
-
-    { // decoding
-        cbor::Input input(output.data(), output.size());
-        cbor::Decoder decoder(input);
-        auto result = decoder.run();
+		}
+	}
+	
+	{ // decoding
+		cbor::Input input(output.data(), output.size());
+		cbor::Decoder decoder(input);
+		auto result = decoder.run();
 		assert(result->object_type() == cbor::ObjectType::Array & result->array_or_map_size == 13);
 		const auto& array_value = result->as<cbor::ObjectType::Array>();
 		auto obj1 = array_value[0]->as_int();
@@ -83,11 +83,11 @@ int main() {
 		assert(obj11.empty());
 		assert(obj12.size() == 2 && obj12["hello"]->as_string() == "world" && obj12["age"]->as_int() == 18);
 		assert(obj13.size() == 5 && std::memcmp(obj13.data(), "abcde", 5) == 0);
-
+		
 		cbor::OutputDynamic output2;
 		cbor::Encoder encoder2(output2);
 		encoder2.write_object(result);
-    }
-
-    return 0;
+	}
+	
+	return 0;
 }

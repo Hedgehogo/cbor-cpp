@@ -9,12 +9,12 @@ namespace cbor {
 		return from<ObjectType::Int>(value);
 	}
 	
-	PObject Object::from_bytes(const BytesValue& value) {
-		return from<ObjectType::Bytes>(value);
+	PObject Object::from_bytes(BytesValue value) {
+		return from<ObjectType::Bytes>(std::move(value));
 	}
 	
-	PObject Object::from_string(const std::string& value) {
-		return from<ObjectType::String>(value);
+	PObject Object::from_string(std::string value) {
+		return from<ObjectType::String>(std::move(value));
 	}
 	
 	PObject Object::create_array(size_t size) {

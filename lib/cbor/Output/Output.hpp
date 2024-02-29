@@ -22,15 +22,15 @@
 namespace cbor {
 	class Output {
 	public:
-		virtual unsigned char* data() const = 0;
+		virtual auto data() const -> unsigned char* = 0;
 		
-		virtual unsigned int size() const = 0;
+		virtual auto size() const -> unsigned int = 0;
 		
-		virtual std::vector<unsigned char> bytes() const;
+		virtual auto bytes() const -> std::vector<unsigned char>;
 		
-		virtual void put_byte(unsigned char value) = 0;
+		virtual auto put_byte(unsigned char value) -> void = 0;
 		
-		virtual void put_bytes(const unsigned char* data, int size) = 0;
+		virtual auto put_bytes(const unsigned char* data, int size) -> void = 0;
 	};
 }
 

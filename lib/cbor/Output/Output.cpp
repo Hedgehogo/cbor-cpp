@@ -6,8 +6,8 @@
 #include <string>
 
 namespace cbor {
-	std::vector<unsigned char> Output::bytes() const {
-		std::vector<unsigned char> result(size());
+	auto Output::bytes() const -> std::vector<unsigned char> {
+		auto result{std::vector<unsigned char>(size())};
 		memcpy(result.data(), data(), size());
 		return result;
 	}

@@ -31,39 +31,39 @@ namespace cbor {
 		
 		~Encoder();
 		
-		void write_bool(bool value);
+		auto write_bool(bool value) -> void;
 		
-		void write_int(int32_t value);
+		auto write_int(int32_t value) -> void;
 		
-		void write_int(int64_t value);
+		auto write_int(int64_t value) -> void;
 		
-		void write_int(uint32_t value);
+		auto write_int(uint32_t value) -> void;
 		
-		void write_int(uint64_t value);
+		auto write_int(uint64_t value) -> void;
 		
-		void write_bytes(const uint8_t* data, uint32_t size);
+		auto write_bytes(const uint8_t* data, uint32_t size) -> void;
 		
-		void write_string(const char* data, uint32_t size);
+		auto write_string(const char* data, uint32_t size) -> void;
 		
-		void write_string(const std::string str);
+		auto write_string(const std::string str) -> void;
 		
-		void write_array(int size);
+		auto write_array(int size) -> void;
 		
-		void write_map(int size);
+		auto write_map(int size) -> void;
 		
-		void write_tag(const uint32_t tag);
+		auto write_tag(const uint32_t tag) -> void;
 		
-		void write_special(int special);
+		auto write_special(int special) -> void;
 		
-		void write_null();
+		auto write_null() -> void;
 		
-		void write_undefined();
+		auto write_undefined() -> void;
 		
-		void write_object(PObject value);
+		auto write_object(PObject value) -> void;
 	
 	private:
-		void write_type_value(int major_type, uint32_t value);
+		auto write_type_value(int major_type, uint32_t value) -> void;
 		
-		void write_type_value(int major_type, uint64_t value);
+		auto write_type_value(int major_type, uint64_t value) -> void;
 	};
 }

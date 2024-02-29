@@ -23,27 +23,27 @@ namespace cbor {
 		_in(&in), _state(DecoderState::Type), _minor_type(255) {
 	}
 	
-	bool Decoder::has_bytes() {
+	auto Decoder::has_bytes() -> bool {
 		return _in->has_bytes(_current_length);
 	}
 	
-	bool Decoder::has_bytes(int count) {
+	auto Decoder::has_bytes(int count) -> bool {
 		return _in->has_bytes(count);
 	}
 	
-	void Decoder::set_type_state() {
+	auto Decoder::set_type_state() -> void {
 		_state = DecoderState::Type;
 	}
 	
-	DecoderState Decoder::get_state() {
+	auto Decoder::get_state() -> DecoderState {
 		return _state;
 	}
 	
-	static PObject object_error(const std::string& error_msg) {
+	static auto object_error(const std::string& error_msg) -> PObject {
 		return Object::from_error(error_msg);
 	}
 	
-	static void put_decoded_value(DecodeData& decode_data, PObject value) {
+	static auto put_decoded_value(DecodeData& decode_data, PObject value) -> void {
 		auto old_structures_stack_size = decode_data.structures_stack.size();
 		if(decode_data.structures_stack.empty()) {
 			if(decode_data.result)
@@ -92,7 +92,7 @@ namespace cbor {
 		}
 	}
 	
-	void Decoder::decode_type_p_int() {
+	auto Decoder::decode_type_p_int() -> void {
 		if(_minor_type < 24) {
 			_state = DecoderState::PInt;
 			_current_length = 0;
@@ -102,7 +102,7 @@ namespace cbor {
 		}
 	}
 	
-	void Decoder::decode_type_n_int() {
+	auto Decoder::decode_type_n_int() -> void {
 		if(_minor_type < 24) {
 			_state = DecoderState::NInt;
 			_current_length = 0;
@@ -112,7 +112,7 @@ namespace cbor {
 		}
 	}
 	
-	void Decoder::decode_type_bytes() {
+	auto Decoder::decode_type_bytes() -> void {
 		if(_minor_type < 24) {
 			_state = DecoderState::BytesData;
 			_current_length = _minor_type;
@@ -122,7 +122,7 @@ namespace cbor {
 		}
 	}
 	
-	void Decoder::decode_type_string() {
+	auto Decoder::decode_type_string() -> void {
 		if(_minor_type < 24) {
 			_state = DecoderState::StringData;
 			_current_length = _minor_type;
@@ -132,7 +132,7 @@ namespace cbor {
 		}
 	}
 	
-	void Decoder::decode_type_array() {
+	auto Decoder::decode_type_array() -> void {
 		if(_minor_type < 24) {
 			_state = DecoderState::Array;
 			_current_length = 0;
@@ -142,7 +142,7 @@ namespace cbor {
 		}
 	}
 	
-	void Decoder::decode_type_map() {
+	auto Decoder::decode_type_map() -> void {
 		if(_minor_type < 24) {
 			_state = DecoderState::Map;
 			_current_length = 0;
@@ -152,7 +152,7 @@ namespace cbor {
 		}
 	}
 	
-	void Decoder::decode_type_tag() {
+	auto Decoder::decode_type_tag() -> void {
 		if(_minor_type < 24) {
 			_state = DecoderState::Tag;
 			_current_length = 0;
@@ -162,7 +162,7 @@ namespace cbor {
 		}
 	}
 	
-	void Decoder::decode_type_special() {
+	auto Decoder::decode_type_special() -> void {
 		if(_minor_type < 20) {
 			_state = DecoderState::Special;
 			_current_length = 0;
@@ -184,7 +184,7 @@ namespace cbor {
 		}
 	}
 	
-	void Decoder::decode_type() {
+	auto Decoder::decode_type() -> void {
 		uint8_t type = _in->get_int8();
 		uint8_t major_type = type >> 5;
 		_minor_type = (uint8_t)(type & 0b00011111);
@@ -217,7 +217,7 @@ namespace cbor {
 		}
 	}
 	
-	IntValue Decoder::decode_p_int() {
+	auto Decoder::decode_p_int() -> IntValue {
 		_state = DecoderState::Type;
 		switch(_current_length) {
 			case 0:
@@ -233,7 +233,7 @@ namespace cbor {
 		throw DecodeException("incorrect length");
 	}
 	
-	IntValue Decoder::decode_n_int() {
+	auto Decoder::decode_n_int() -> IntValue {
 		_state = DecoderState::Type;
 		switch(_current_length) {
 			case 0:
@@ -249,7 +249,7 @@ namespace cbor {
 		throw DecodeException("incorrect length");
 	}
 	
-	void Decoder::decode_bytes_size() {
+	auto Decoder::decode_bytes_size() -> void {
 		if(_current_length != 8) {
 			_state = DecoderState::BytesData;
 			switch(_current_length) {
@@ -269,14 +269,14 @@ namespace cbor {
 		}
 	}
 	
-	BytesValue Decoder::decode_bytes_data() {
+	auto Decoder::decode_bytes_data() -> BytesValue {
 		_state = DecoderState::Type;
 		std::vector<char> data(_current_length);
 		_in->get_bytes(data.data(), _current_length);
 		return data;
 	}
 	
-	void Decoder::decode_string_size() {
+	auto Decoder::decode_string_size() -> void {
 		if(_current_length != 8) {
 			_state = DecoderState::StringData;
 			switch(_current_length) {
@@ -296,7 +296,7 @@ namespace cbor {
 		}
 	}
 	
-	StringValue Decoder::decode_string_data() {
+	auto Decoder::decode_string_data() -> StringValue {
 		_state = DecoderState::Type;
 		std::vector<char> data(_current_length);
 		_in->get_bytes(data.data(), _current_length);
@@ -304,7 +304,7 @@ namespace cbor {
 		return str;
 	}
 	
-	uint32_t Decoder::decode_array_size() {
+	auto Decoder::decode_array_size() -> uint32_t {
 		if(_current_length != 8) {
 			_state = DecoderState::Type;
 			switch(_current_length) {
@@ -322,7 +322,7 @@ namespace cbor {
 		throw DecodeException("extra long array");
 	}
 	
-	uint32_t Decoder::decode_map_size() {
+	auto Decoder::decode_map_size() -> uint32_t {
 		if(_current_length != 8) {
 			_state = DecoderState::Type;
 			switch(_current_length) {
@@ -340,7 +340,7 @@ namespace cbor {
 		throw DecodeException("extra long map");
 	}
 	
-	TagValue Decoder::decode_tag() {
+	auto Decoder::decode_tag() -> TagValue {
 		_state = DecoderState::Type;
 		switch(_current_length) {
 			case 0:
@@ -356,7 +356,7 @@ namespace cbor {
 		throw DecodeException("extra long tag");
 	}
 	
-	SpecialValue Decoder::decode_special() {
+	auto Decoder::decode_special() -> SpecialValue {
 		_state = DecoderState::Type;
 		switch(_current_length) {
 			case 0:
@@ -372,27 +372,27 @@ namespace cbor {
 		throw DecodeException("extra long special");
 	}
 	
-	ExtraIntValue Decoder::decode_extra_p_int() {
+	auto Decoder::decode_extra_p_int() -> ExtraIntValue {
 		_state = DecoderState::Type;
 		return {true, _in->get_int64()};
 	}
 	
-	ExtraIntValue Decoder::decode_extra_n_int() {
+	auto Decoder::decode_extra_n_int() -> ExtraIntValue {
 		_state = DecoderState::Type;
 		return {false, _in->get_int64() + 1};
 	}
 	
-	ExtraTagValue Decoder::decode_extra_tag() {
+	auto Decoder::decode_extra_tag() -> ExtraTagValue {
 		_state = DecoderState::Type;
 		return _in->get_int64();
 	}
 	
-	ExtraSpecialValue Decoder::decode_extra_special() {
+	auto Decoder::decode_extra_special() -> ExtraSpecialValue {
 		_state = DecoderState::Type;
 		return _in->get_int64();
 	}
 	
-	PObject Decoder::run() {
+	auto Decoder::run() -> PObject {
 		DecodeData decode_data{};
 		
 		while(true) {
@@ -479,4 +479,3 @@ namespace cbor {
 	Decoder::~Decoder() {
 	}
 }
-

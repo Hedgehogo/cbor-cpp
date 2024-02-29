@@ -26,11 +26,15 @@ namespace cbor {
 		this->_offset = 0;
 	}
 	
-	OutputStatic::~OutputStatic() {
-		delete _buffer;
+	auto OutputStatic::data() const -> unsigned char* {
+		return _buffer;
 	}
 	
-	void OutputStatic::put_byte(unsigned char value) {
+	auto OutputStatic::size() const -> unsigned int {
+		return _offset;
+	}
+	
+	auto OutputStatic::put_byte(unsigned char value) -> void {
 		if(_offset < _capacity) {
 			_buffer[_offset++] = value;
 		} else {
@@ -38,7 +42,7 @@ namespace cbor {
 		}
 	}
 	
-	void OutputStatic::put_bytes(const unsigned char* data, int size) {
+	auto OutputStatic::put_bytes(unsigned char const* data, int size) -> void {
 		if(_offset + size - 1 < _capacity) {
 			memcpy(_buffer + _offset, data, size);
 			_offset += size;
@@ -47,11 +51,7 @@ namespace cbor {
 		}
 	}
 	
-	unsigned char* OutputStatic::getData() const {
-		return _buffer;
-	}
-	
-	unsigned int OutputStatic::getSize() const {
-		return _offset;
+	OutputStatic::~OutputStatic() {
+		delete _buffer;
 	}
 }

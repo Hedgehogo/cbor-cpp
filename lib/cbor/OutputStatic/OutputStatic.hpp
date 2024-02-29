@@ -20,23 +20,23 @@
 
 namespace cbor {
 	class OutputStatic : public Output {
+	public:
+		OutputStatic(unsigned int capacity);
+		
+		auto data() const -> unsigned char* override;
+		
+		auto size() const -> unsigned int override;
+		
+		auto put_byte(unsigned char value) -> void override;
+		
+		auto put_bytes(unsigned char const* data, int size) -> void override;
+		
+		~OutputStatic();
+	
 	private:
 		unsigned char* _buffer;
 		unsigned int _capacity;
 		unsigned int _offset;
-	
-	public:
-		OutputStatic(unsigned int capacity);
-		
-		~OutputStatic();
-		
-		virtual unsigned char* getData() const;
-		
-		virtual unsigned int getSize() const;
-		
-		virtual void put_byte(unsigned char value);
-		
-		virtual void put_bytes(const unsigned char* data, int size);
 	};
 }
 

@@ -24,7 +24,7 @@ namespace cbor {
 	Encoder::~Encoder() {
 	}
 	
-	void Encoder::write_type_value(int major_type, uint32_t value) {
+	auto Encoder::write_type_value(int major_type, uint32_t value) -> void {
 		major_type <<= 5;
 		if(value < 24) {
 			_out->put_byte((uint8_t)(major_type | value));
@@ -44,7 +44,7 @@ namespace cbor {
 		}
 	}
 	
-	void Encoder::write_type_value(int major_type, uint64_t value) {
+	auto Encoder::write_type_value(int major_type, uint64_t value) -> void {
 		major_type <<= 5;
 		if(value < 24ULL) {
 			_out->put_byte((uint8_t)(major_type | value));
@@ -74,15 +74,15 @@ namespace cbor {
 		}
 	}
 	
-	void Encoder::write_int(uint32_t value) {
+	auto Encoder::write_int(uint32_t value) -> void {
 		write_type_value(0, value);
 	}
 	
-	void Encoder::write_int(uint64_t value) {
+	auto Encoder::write_int(uint64_t value) -> void {
 		write_type_value(0, value);
 	}
 	
-	void Encoder::write_int(int64_t value) {
+	auto Encoder::write_int(int64_t value) -> void {
 		if(value < 0) {
 			write_type_value(1, (uint64_t)-(value + 1));
 		} else {
@@ -90,7 +90,7 @@ namespace cbor {
 		}
 	}
 	
-	void Encoder::write_int(int32_t value) {
+	auto Encoder::write_int(int32_t value) -> void {
 		if(value < 0) {
 			write_type_value(1, (uint32_t)-(value + 1));
 		} else {
@@ -98,39 +98,39 @@ namespace cbor {
 		}
 	}
 	
-	void Encoder::write_bytes(const uint8_t* data, uint32_t size) {
+	auto Encoder::write_bytes(const uint8_t* data, uint32_t size) -> void {
 		write_type_value(2, size);
 		_out->put_bytes(data, size);
 	}
 	
-	void Encoder::write_string(const char* data, uint32_t size) {
+	auto Encoder::write_string(const char* data, uint32_t size) -> void {
 		write_type_value(3, size);
 		_out->put_bytes((const uint8_t*)data, size);
 	}
 	
-	void Encoder::write_string(const std::string str) {
+	auto Encoder::write_string(const std::string str) -> void {
 		write_type_value(3, (uint32_t)str.size());
 		_out->put_bytes((const uint8_t*)str.c_str(), (int)str.size());
 	}
 	
 	
-	void Encoder::write_array(int size) {
+	auto Encoder::write_array(int size) -> void {
 		write_type_value(4, (uint32_t)size);
 	}
 	
-	void Encoder::write_map(int size) {
+	auto Encoder::write_map(int size) -> void {
 		write_type_value(5, (uint32_t)size);
 	}
 	
-	void Encoder::write_tag(const uint32_t tag) {
+	auto Encoder::write_tag(const uint32_t tag) -> void {
 		write_type_value(6, tag);
 	}
 	
-	void Encoder::write_special(int special) {
+	auto Encoder::write_special(int special) -> void {
 		write_type_value(7, (uint32_t)special);
 	}
 	
-	void Encoder::write_bool(bool value) {
+	auto Encoder::write_bool(bool value) -> void {
 		if(value) {
 			_out->put_byte((uint8_t)0xf5);
 		} else {
@@ -138,15 +138,15 @@ namespace cbor {
 		}
 	}
 	
-	void Encoder::write_null() {
+	auto Encoder::write_null() -> void {
 		_out->put_byte((uint8_t)0xf6);
 	}
 	
-	void Encoder::write_undefined() {
+	auto Encoder::write_undefined() -> void {
 		_out->put_byte((uint8_t)0xf7);
 	}
 	
-	void Encoder::write_object(PObject value) {
+	auto Encoder::write_object(PObject value) -> void {
 		if(!value)
 			return;
 		switch(value->object_type()) {

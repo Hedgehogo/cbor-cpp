@@ -28,19 +28,19 @@ namespace cbor {
 	public:
 		Input(void* data, int size);
 		
-		bool has_bytes(int count);
+		auto has_bytes(int count) -> bool;
 		
-		bool is_empty();
+		auto is_empty() -> bool;
 		
-		uint8_t get_int8();
+		auto get_int8() -> uint8_t;
 		
-		uint16_t get_int16();
+		auto get_int16() -> uint16_t;
 		
-		uint32_t get_int32();
+		auto get_int32() -> uint32_t;
 		
-		uint64_t get_int64();
+		auto get_int64() -> uint64_t;
 		
-		void get_bytes(void* to, int count);
+		auto get_bytes(void* to, int count) -> void;
 		
 		~Input();
 	};

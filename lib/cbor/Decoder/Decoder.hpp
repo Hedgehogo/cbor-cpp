@@ -51,91 +51,76 @@ namespace cbor {
 	};
 	
 	class Decoder {
+	public:
+		Decoder(Input& in);
+		
+		auto has_bytes() -> bool;
+		
+		auto has_bytes(int count) -> bool;
+		
+		auto set_type_state() -> void;
+		
+		auto get_state() -> DecoderState;
+		
+		auto decode_type_p_int() -> void;
+		
+		auto decode_type_n_int() -> void;
+		
+		auto decode_type_bytes() -> void;
+		
+		auto decode_type_string() -> void;
+		
+		auto decode_type_array() -> void;
+		
+		auto decode_type_map() -> void;
+		
+		auto decode_type_tag() -> void;
+		
+		auto decode_type_special() -> void;
+		
+		auto decode_type() -> void;
+		
+		auto decode_p_int() -> IntValue;
+		
+		auto decode_n_int() -> IntValue;
+		
+		auto decode_bytes_size() -> void;
+		
+		auto decode_bytes_data() -> BytesValue;
+		
+		auto decode_string_size() -> void;
+		
+		auto decode_string_data() -> StringValue;
+		
+		auto decode_array_size() -> uint32_t;
+		
+		auto decode_map_size() -> uint32_t;
+		
+		auto decode_tag() -> TagValue;
+		
+		auto decode_special() -> SpecialValue;
+		
+		auto decode_extra_p_int() -> ExtraIntValue;
+		
+		auto decode_extra_n_int() -> ExtraIntValue;
+		
+		auto decode_extra_tag() -> ExtraTagValue;
+		
+		auto decode_extra_special() -> ExtraSpecialValue;
+		
+		auto run() -> PObject;
+		
+		~Decoder();
+	
 	private:
+		template<DecoderState State, DecoderState LastState = State>
+		auto decode_type_count_length(unsigned char minor_type) -> bool;
+		
 		Input* _in;
 		DecoderState _state;
 		int _current_length;
 		uint8_t _minor_type;
-		
-		template<DecoderState State, DecoderState LastState = State>
-		bool decode_type_count_length(unsigned char minor_type) {
-			if(minor_type == 24) { // 1 byte
-				_current_length = 1;
-				_state = State;
-			} else if(minor_type == 25) { // 2 byte
-				_current_length = 2;
-				_state = State;
-			} else if(minor_type == 26) { // 4 byte
-				_current_length = 4;
-				_state = State;
-			} else if(minor_type == 27) { // 8 byte
-				_current_length = 8;
-				_state = LastState;
-			} else {
-				return false;
-			}
-			return true;
-		}
-	
-	public:
-		Decoder(Input& in);
-		
-		bool has_bytes();
-		
-		bool has_bytes(int count);
-		
-		void set_type_state();
-		
-		DecoderState get_state();
-		
-		void decode_type_p_int();
-		
-		void decode_type_n_int();
-		
-		void decode_type_bytes();
-		
-		void decode_type_string();
-		
-		void decode_type_array();
-		
-		void decode_type_map();
-		
-		void decode_type_tag();
-		
-		void decode_type_special();
-		
-		void decode_type();
-		
-		IntValue decode_p_int();
-		
-		IntValue decode_n_int();
-		
-		void decode_bytes_size();
-		
-		BytesValue decode_bytes_data();
-		
-		void decode_string_size();
-		
-		StringValue decode_string_data();
-		
-		uint32_t decode_array_size();
-		
-		uint32_t decode_map_size();
-		
-		TagValue decode_tag();
-		
-		SpecialValue decode_special();
-		
-		ExtraIntValue decode_extra_p_int();
-		
-		ExtraIntValue decode_extra_n_int();
-		
-		ExtraTagValue decode_extra_tag();
-		
-		ExtraSpecialValue decode_extra_special();
-		
-		PObject run();
-		
-		~Decoder();
 	};
 }
+
+#include "Decoder.inl"

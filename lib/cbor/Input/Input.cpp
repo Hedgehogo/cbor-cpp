@@ -24,21 +24,21 @@ namespace cbor {
 		_data((uint8_t*)data), _size(size), _offset(0) {
 	}
 	
-	bool Input::has_bytes(int count) {
+	auto Input::has_bytes(int count) -> bool {
 		return _size - _offset >= count;
 	}
 	
-	uint8_t Input::get_int8() {
+	auto Input::get_int8() -> uint8_t {
 		return _data[_offset++];
 	}
 	
-	uint16_t Input::get_int16() {
+	auto Input::get_int16() -> uint16_t {
 		uint16_t value = ((uint16_t)_data[_offset] << 8) | ((uint16_t)_data[_offset + 1]);
 		_offset += 2;
 		return value;
 	}
 	
-	uint32_t Input::get_int32() {
+	auto Input::get_int32() -> uint32_t {
 		uint32_t value =
 			((uint32_t)_data[_offset] << 24) |
 			((uint32_t)_data[_offset + 1] << 16) |
@@ -48,7 +48,7 @@ namespace cbor {
 		return value;
 	}
 	
-	uint64_t Input::get_int64() {
+	auto Input::get_int64() -> uint64_t {
 		uint64_t value =
 			((uint64_t)_data[_offset] << 56) |
 			((uint64_t)_data[_offset + 1] << 48) | ((uint64_t)_data[_offset + 2] << 40) |
@@ -59,7 +59,7 @@ namespace cbor {
 		return value;
 	}
 	
-	void Input::get_bytes(void* to, int count) {
+	auto Input::get_bytes(void* to, int count) -> void {
 		memcpy(to, _data + _offset, count);
 		_offset += count;
 	}
@@ -67,7 +67,7 @@ namespace cbor {
 	Input::~Input() {
 	}
 	
-	bool Input::is_empty() {
+	auto Input::is_empty() -> bool {
 		return _size == _offset;
 	}
 }

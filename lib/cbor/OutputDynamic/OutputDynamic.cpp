@@ -20,33 +20,29 @@
 #include <stdlib.h>
 
 namespace cbor {
-	void OutputDynamic::init(unsigned int inital_capacity) {
-		this->_capacity = inital_capacity;
-		this->_buffer = new unsigned char[inital_capacity];
-		this->_offset = 0;
+	OutputDynamic::OutputDynamic(unsigned int inital_capacity) {
+		init(inital_capacity);
 	}
 	
 	OutputDynamic::OutputDynamic() {
 		init(256);
 	}
 	
-	OutputDynamic::OutputDynamic(unsigned int inital_capacity) {
-		init(inital_capacity);
+	auto OutputDynamic::init(unsigned int inital_capacity) -> void {
+		this->_capacity = inital_capacity;
+		this->_buffer = new unsigned char[inital_capacity];
+		this->_offset = 0;
 	}
 	
-	OutputDynamic::~OutputDynamic() {
-		delete _buffer;
-	}
-	
-	unsigned char* OutputDynamic::data() const {
+	auto OutputDynamic::data() const -> unsigned char* {
 		return _buffer;
 	}
 	
-	unsigned int OutputDynamic::size() const {
+	auto OutputDynamic::size() const -> unsigned int {
 		return _offset;
 	}
 	
-	void OutputDynamic::put_byte(unsigned char value) {
+	auto OutputDynamic::put_byte(unsigned char value) -> void {
 		if(_offset < _capacity) {
 			_buffer[_offset++] = value;
 		} else {
@@ -56,7 +52,7 @@ namespace cbor {
 		}
 	}
 	
-	void OutputDynamic::put_bytes(const unsigned char* data, int size) {
+	auto OutputDynamic::put_bytes(unsigned char const* data, int size) -> void {
 		while(_offset + size > _capacity) {
 			_capacity *= 2;
 			_buffer = (unsigned char*)realloc(_buffer, _capacity);
@@ -64,5 +60,9 @@ namespace cbor {
 		
 		memcpy(_buffer + _offset, data, size);
 		_offset += size;
+	}
+	
+	OutputDynamic::~OutputDynamic() {
+		delete _buffer;
 	}
 }

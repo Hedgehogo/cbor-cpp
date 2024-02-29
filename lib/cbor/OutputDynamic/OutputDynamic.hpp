@@ -21,28 +21,27 @@
 
 namespace cbor {
 	class OutputDynamic : public Output {
+	public:
+		OutputDynamic(unsigned int inital_capacity);
+		
+		OutputDynamic();
+		
+		auto data() const -> unsigned char* override;
+		
+		auto size() const -> unsigned int override;
+		
+		auto put_byte(unsigned char value) -> void override;
+		
+		auto put_bytes(unsigned char const* data, int size) -> void override;
+		
+		~OutputDynamic();
+	
 	private:
+		auto init(unsigned int inital_capacity) -> void;
+	
 		unsigned char* _buffer;
 		unsigned int _capacity;
 		unsigned int _offset;
-	
-	public:
-		OutputDynamic();
-		
-		OutputDynamic(unsigned int inital_capacity);
-		
-		~OutputDynamic();
-		
-		virtual unsigned char* data() const;
-		
-		virtual unsigned int size() const;
-		
-		virtual void put_byte(unsigned char value);
-		
-		virtual void put_bytes(const unsigned char* data, int size);
-	
-	private:
-		void init(unsigned int inital_capacity);
 	};
 }
 

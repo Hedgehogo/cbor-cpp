@@ -11,93 +11,87 @@ namespace cbor {
 	
 	class Exception : public std::exception {
 	protected:
-		int64_t _code;
-		std::string _name_value;
-		std::string _error_msg;
+		int64_t code_;
+		std::string name_value_;
+		std::string error_msg_;
 	
 	public:
-		inline Exception() : _code(0) {
+		inline Exception(int64_t code, std::string name_value, std::string error_msg) :
+			code_(code), name_value_(std::move(name_value)), error_msg_(std::move(error_msg)) {
 		}
 		
-		inline Exception(int64_t code, const std::string& name_value, const std::string& error_msg)
-			: _code(code), _name_value(name_value), _error_msg(error_msg) {
+		inline Exception(std::string msg) :
+			code_(default_exception_code), error_msg_(std::move(msg)) {
 		}
 		
-		inline Exception(const Exception& other) {
-			_code = other._code;
-			_name_value = other._name_value;
-			_error_msg = other._error_msg;
+		inline Exception(char const* msg) :
+			code_(default_exception_code), error_msg_(msg) {
 		}
 		
-		inline Exception(const char* msg) {
-			_code = default_exception_code;
-			_error_msg = msg;
+		inline Exception() : code_(0) {
 		}
 		
-		inline Exception(const std::string& msg) {
-			_code = default_exception_code;
-			_error_msg = msg;
+		inline Exception(Exception const& other) = default;
+		
+		inline auto name() const -> std::string {
+			return name_value_;
 		}
 		
-		inline Exception& operator=(const Exception& other) {
+		inline virtual auto code() const -> int64_t {
+			return code_;
+		}
+		
+		inline virtual auto what() const noexcept -> char const* {
+			return error_msg_.c_str();
+		}
+		
+		inline virtual auto dynamic_copy_exception() const -> std::shared_ptr<Exception> {
+			return std::make_shared<Exception>(*this);
+		}
+		
+		inline virtual auto dynamic_rethrow_exception() const -> void {
+			if(code() == 0) {
+				throw *this;
+			} else {
+				Exception::dynamic_rethrow_exception();
+			}
+		}
+		
+		inline auto operator=(const Exception& other) -> Exception& {
 			if(this != &other) {
-				_error_msg = other._error_msg;
+				error_msg_ = other.error_msg_;
 			}
 			return *this;
 		}
 		
-		inline virtual ~Exception() {
-		}
-		
-		inline virtual const char* what() const noexcept {
-			return _error_msg.c_str();
-		}
-		
-		inline virtual int64_t code() const {
-			return _code;
-		}
-		
-		inline std::string name() const {
-			return _name_value;
-		}
-		
-		inline virtual std::shared_ptr<Exception> dynamic_copy_exception() const {
-			return std::make_shared<Exception>(*this);
-		}
-		
-		inline virtual void dynamic_rethrow_exception() const {
-			if(code() == 0)
-				throw *this;
-			else
-				Exception::dynamic_rethrow_exception();
-		}
+		inline virtual ~Exception() = default;
 	};
 	
 	template<typename Helper_, typename Base_, int64_t Code_>
 	class DeclareDerivedException : public Base_ {
 	public:
-		explicit DeclareDerivedException(int64_t code, const std::string& name_value, const std::string& what_value) :
-			Base_(code, name_value, what_value) {
+		explicit DeclareDerivedException(int64_t code, std::string name_value, std::string what_value) :
+			Base_(code, std::move(name_value), std::move(what_value)) {
+		}
+		
+		explicit DeclareDerivedException(std::string what_value) :
+			Base_(Code_, Helper_::type_str, std::move(what_value)) {
 		}
 		
 		explicit DeclareDerivedException() :
-			Base_(Code_, Helper_::type_str(), Helper_::what()) {
+			Base_(Code_, Helper_::type_str, Helper_::what) {
 		}
 		
-		virtual std::shared_ptr<Exception> dynamic_copy_exception() const {
+		virtual auto dynamic_copy_exception() const -> std::shared_ptr<Exception> {
 			return std::make_shared<DeclareDerivedException<Helper_, Base_, Code_> >(*this);
 		}
 		
-		virtual void dynamic_rethrow_exception() const {
+		virtual auto dynamic_rethrow_exception() const -> void {
 			if(this->code() == Code_) {
 				throw *this;
 			} else {
 				cbor::Exception::dynamic_rethrow_exception();
 			}
-		}
-		
-		explicit DeclareDerivedException(const std::string& what_value) :
-			Base_(Code_, Helper_::type_str(), what_value) {
 		}
 	};
 	
@@ -105,37 +99,25 @@ namespace cbor {
 	using DeclareException = DeclareDerivedException<Helper_, Exception, Code_>;
 	
 	struct EncodeExceptionHelper {
-		static std::string type_str() {
-			return "EncodeException";
-		};
+		constexpr static auto type_str{"EncodeException"};
 		
-		static std::string what() {
-			return "CBOR Encode exception";
-		};
+		constexpr static auto what{"CBOR Encode exception"};
 	};
 	
 	using EncodeException = DeclareException<EncodeExceptionHelper, 101>;
 	
 	struct DecodeExceptionHelper {
-		static std::string type_str() {
-			return "DecodeException";
-		};
+		constexpr static auto type_str {"DecodeException"};
 		
-		static std::string what() {
-			return "CBOR Decode exception";
-		};
+		constexpr static auto what {"CBOR Decode exception"};
 	};
 	
 	using DecodeException = DeclareException<EncodeExceptionHelper, 102>;
 	
 	struct OutputExceptionHelper {
-		static std::string type_str() {
-			return "OutputException";
-		};
+		constexpr static auto type_str {"OutputException"};
 		
-		static std::string what() {
-			return "CBOR Output exception";
-		};
+		constexpr static auto what {"CBOR Output exception"};
 	};
 	
 	using OutputException = DeclareException<OutputExceptionHelper, 103>;

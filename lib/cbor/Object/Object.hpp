@@ -68,137 +68,133 @@ namespace cbor {
 		uint32_t array_or_map_size = 0;
 		
 		template<ObjectType Type>
-		void set(const ObjectValueType<Type>& new_value) {
-			value.emplace<static_cast<size_t>(Type)>(new_value);
-		}
+		auto set(ObjectValueType<Type> new_value) -> void;
 		
 		template<ObjectType Type>
-		ObjectValueType<Type>& as() {
-			return std::get<static_cast<size_t>(Type)>(value);
-		}
+		auto as() -> ObjectValueType<Type>&;
 		
 		template<ObjectType Type>
-		const ObjectValueType<Type>& as() const {
-			return std::get<static_cast<size_t>(Type)>(value);
-		}
+		auto as() const -> ObjectValueType<Type> const&;
 		
 		template<ObjectType Type>
-		inline bool is() const {
+		inline auto is() const -> bool {
 			return Type == static_cast<ObjectType>(value.index());
 		}
 		
-		inline bool is_null() const {
+		inline auto is_null() const -> bool {
 			return is<ObjectType::Null>();
 		}
 		
-		inline bool is_undefined() const {
+		inline auto is_undefined() const -> bool {
 			return is<ObjectType::Undefined>();
 		}
 		
-		inline bool is_int() const {
+		inline auto is_int() const -> bool {
 			return is<ObjectType::Int>();
 		}
 		
-		inline bool is_string() const {
+		inline auto is_string() const -> bool {
 			return is<ObjectType::String>();
 		}
 		
-		inline bool is_bytes() const {
+		inline auto is_bytes() const -> bool {
 			return is<ObjectType::Bytes>();
 		}
 		
-		inline bool is_bool() const {
+		inline auto is_bool() const -> bool {
 			return is<ObjectType::Bool>();
 		}
 		
-		inline bool is_array() const {
+		inline auto is_array() const -> bool {
 			return is<ObjectType::Array>();
 		}
 		
-		inline bool is_map() const {
+		inline auto is_map() const -> bool {
 			return is<ObjectType::Map>();
 		}
 		
-		inline bool is_tag() const {
+		inline auto is_tag() const -> bool {
 			return is<ObjectType::Tag>();
 		}
 		
-		inline bool is_special() const {
+		inline auto is_special() const -> bool {
 			return is<ObjectType::Special>();
 		}
 		
-		inline ObjectType object_type() const {
+		inline auto object_type() const -> ObjectType {
 			return static_cast<ObjectType>(value.index());
 		}
 		
-		inline const BoolValue& as_bool() const {
+		inline auto as_bool() const -> BoolValue const& {
 			return as<ObjectType::Bool>();
 		}
 		
-		inline const IntValue& as_int() const {
+		inline auto as_int() const -> IntValue const& {
 			return as<ObjectType::Int>();
 		}
 		
-		inline const BytesValue& as_bytes() const {
+		inline auto as_bytes() const -> BytesValue const& {
 			return as<ObjectType::Bytes>();
 		}
 		
-		inline const StringValue& as_string() const {
+		inline auto as_string() const -> StringValue const& {
 			return as<ObjectType::String>();
 		}
 		
-		inline const ArrayValue& as_array() const {
+		inline auto as_array() const -> ArrayValue const& {
 			return as<ObjectType::Array>();
 		}
 		
-		inline const MapValue& as_map() const {
+		inline auto as_map() const -> MapValue const& {
 			return as<ObjectType::Map>();
 		}
 		
-		inline const TagValue& as_tag() const {
+		inline auto as_tag() const -> TagValue const& {
 			return as<ObjectType::Tag>();
 		}
 		
-		inline const SpecialValue& as_special() const {
+		inline auto as_special() const -> SpecialValue const& {
 			return as<ObjectType::Special>();
 		}
 		
 		template<ObjectType Type>
-		static PObject from(const ObjectValueType<Type>& value, uint32_t size = 0) {
+		static auto from(ObjectValueType<Type> value, uint32_t size = 0) -> PObject {
 			auto result = std::make_shared<Object>();
-			result->set<Type>(value);
+			result->set<Type>(std::move(value));
 			result->array_or_map_size = size;
 			return result;
 		}
 		
-		static PObject from_bool(BoolValue value);
+		static auto from_bool(BoolValue value) -> PObject;
 		
-		static PObject from_int(IntValue value);
+		static auto from_int(IntValue value) -> PObject;
 		
-		static PObject from_bytes(const BytesValue& value);
+		static auto from_bytes(BytesValue value) -> PObject;
 		
-		static PObject from_string(const std::string& value);
+		static auto from_string(std::string value) -> PObject;
 		
-		static PObject create_array(size_t size);
+		static auto create_array(size_t size) -> PObject;
 		
-		static PObject create_map(size_t size);
+		static auto create_map(size_t size) -> PObject;
 		
-		static PObject from_tag(TagValue value);
+		static auto from_tag(TagValue value) -> PObject;
 		
-		static PObject from_special(SpecialValue value);
+		static auto from_special(SpecialValue value) -> PObject;
 		
-		static PObject create_undefined();
+		static auto create_undefined() -> PObject;
 		
-		static PObject create_null();
+		static auto create_null() -> PObject;
 		
-		static PObject from_error(StringValue value);
+		static auto from_error(StringValue value) -> PObject;
 		
-		static PObject from_extra_int(ExtraIntValue value);
+		static auto from_extra_int(ExtraIntValue value) -> PObject;
 		
-		static PObject from_extra_int(uint64_t value, bool sign);
+		static auto from_extra_int(uint64_t value, bool sign) -> PObject;
 		
-		static PObject from_extra_tag(ExtraTagValue value);
+		static auto from_extra_tag(ExtraTagValue value) -> PObject;
 		
-		static PObject from_extra_special(ExtraSpecialValue value);
+		static auto from_extra_special(ExtraSpecialValue value) -> PObject;
 	};
 }
+
+#include "Object.inl"

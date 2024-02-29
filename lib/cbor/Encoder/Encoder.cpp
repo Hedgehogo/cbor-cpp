@@ -169,7 +169,7 @@ namespace cbor {
 				write_string(value->as_string());
 				return;
 			case ObjectType::Bytes: {
-				const auto& bytes = value->as_bytes();
+				auto const& bytes = value->as_bytes();
 				write_bytes((const uint8_t*)bytes.data(), bytes.size());
 				return;
 			}
@@ -186,17 +186,17 @@ namespace cbor {
 				write_special(value->as<ObjectType::ExtraSpecial>());
 				return;
 			case ObjectType::Array: {
-				const auto& array_value = value->as_array();
+				auto const& array_value = value->as_array();
 				write_array(array_value.size());
-				for(const auto& item: array_value) {
+				for(auto const& item: array_value) {
 					write_object(item);
 				}
 				return;
 			}
 			case ObjectType::Map: {
-				const auto& map_value = value->as_map();
+				auto const& map_value = value->as_map();
 				write_map(map_value.size());
-				for(const auto& p: map_value) {
+				for(auto const& p: map_value) {
 					write_string(p.first);
 					write_object(p.second);
 				}

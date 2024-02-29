@@ -59,7 +59,7 @@ int main() {
 		cbor::Decoder decoder(input);
 		auto result = decoder.run();
 		assert(result->object_type() == cbor::ObjectType::Array & result->array_or_map_size == 13);
-		const auto& array_value = result->as<cbor::ObjectType::Array>();
+		auto const& array_value = result->as<cbor::ObjectType::Array>();
 		auto obj1 = array_value[0]->as_int();
 		auto obj2 = array_value[1]->as_string();
 		auto obj3 = array_value[2]->as_int();

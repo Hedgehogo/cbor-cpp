@@ -72,7 +72,7 @@ namespace cbor {
 				if(decode_data.map_key_temp->object_type() != ObjectType::String) {
 					throw DecodeException("invalid map key type");
 				}
-				const auto& key = decode_data.map_key_temp->as<ObjectType::String>();
+				auto const& key = decode_data.map_key_temp->as<ObjectType::String>();
 				auto& map_value = last->as<ObjectType::Map>();
 				map_value[key] = value;
 				if(map_value.size() >= last->array_or_map_size) {
